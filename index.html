@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#faf4eb">
+  <meta name="description" content="圣迪乐 Omega-3 会员运营战略体系 V1.0。经营一人，辐射一家。">
+  <meta property="og:title" content="圣迪乐 Omega-3 会员运营战略体系 V1.0">
+  <meta property="og:description" content="从自主品牌会员经营出发，以规模增长与单客经济为双轮，建设长期消费者经营体系。">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://roderickren1.github.io/sundaily-omega3-strategy/">
+  <meta property="og:image" content="https://roderickren1.github.io/sundaily-omega3-strategy/assets/hero-egg.jpg">
+  <link rel="canonical" href="https://roderickren1.github.io/sundaily-omega3-strategy/">
+  <title>圣迪乐 Omega-3｜会员运营战略体系 V1.0</title>
+  <link rel="icon" href="./assets/mark.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="./style.css">
+  <script type="module" src="./app.js"></script>
+</head>
+<body>
+  <a class="skip" href="#overview">跳至战略总览</a>
+  <header class="site-header">
+    <div class="nav-shell">
+      <a class="brand" href="#top"><img src="./assets/mark.svg" width="33" height="33" alt=""><span><strong>圣迪乐 <small>OMEGA-3</small></strong><span>会员运营战略体系</span></span></a>
+      <nav class="desktop-nav" aria-label="战略章节" id="nav"></nav>
+      <div class="nav-actions"><a href="#overview" class="overview-link">战略总览</a><button id="present" class="button button-small">汇报模式</button><button id="menu-button" class="button button-small menu-button" aria-expanded="false" aria-controls="mobile-nav">目录</button></div>
+    </div>
+    <nav id="mobile-nav" class="mobile-nav" aria-label="移动端章节" hidden></nav>
+    <div class="progress-track" aria-hidden="true"><div id="reading-progress"></div></div>
+  </header>
+  <noscript><p class="wrap">请启用 JavaScript 以阅读完整战略和使用交互图。</p></noscript>
+  <main id="main">
+    <section id="top" class="hero">
+      <div class="wrap hero-grid">
+        <div class="hero-copy">
+          <p class="eyebrow"><span>SUNDaily Omega-3</span> <span>Membership Strategy V1.0</span></p>
+          <h1>经营一人，<br><em>辐射一家。</em></h1>
+          <p class="hero-english" lang="en">From Consumer to Family.</p>
+          <p class="hero-deck">从自主品牌会员经营出发，构建以消费者洞察为驱动、以规模增长与单客经济为双轮的长期消费者经营体系。</p>
+          <div class="hero-actions"><a href="#overview" class="button button-primary">探索完整战略</a><a href="#summary" class="button">查看战略一张图</a></div>
+        </div>
+        <figure class="hero-art" aria-label="以蛋形雕塑与三层轨道呈现从消费者到家庭与社会关系的辐射">
+          <div class="hero-egg" aria-hidden="true"></div>
+          <div class="hero-orbits" aria-hidden="true"><i></i><i></i><i></i></div>
+          <span class="orbit-label label-consumer"><i></i> Consumer</span>
+          <span class="orbit-label label-family"><i></i> Family</span>
+          <span class="orbit-label label-community"><i></i> Community</span>
+          <figcaption>从个体选择，到家庭与社会关系</figcaption>
+        </figure>
+      </div>
+      <div class="wrap hero-note"><span>经营哲学</span><p>不追求消费者每天想起圣迪乐，而追求消费者每次需要鸡蛋的时候，都愿意选择圣迪乐。</p></div>
+    </section>
+    <div id="chapters"></div>
+  </main>
+  <footer class="site-footer"><div class="wrap"><span>圣迪乐 Omega-3 · 会员运营战略体系 V1.0</span><a href="#top">回到开场</a></div></footer>
+  <div id="present-controls" class="present-controls" hidden>
+    <button class="button button-small" id="prev-slide">上一章</button><output id="slide-label" aria-live="polite"></output><button class="button button-small" id="next-slide">下一章</button><button class="button button-small" id="fullscreen">全屏</button><button class="button button-small" id="exit-present">退出汇报</button>
+  </div>
+  <dialog id="detail-dialog" aria-labelledby="dialog-title"><header><p class="eyebrow">行业机制参考</p><form method="dialog"><button class="button button-small" aria-label="关闭案例详情">关闭</button></form></header><div id="dialog-body"></div></dialog>
+</body>
+</html>
