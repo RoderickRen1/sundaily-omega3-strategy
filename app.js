@@ -1,8 +1,8 @@
 import {
   chapters, overview, opportunities, equity, research, benchmarks, family, dimensions, principles,
-  privileges, rewards, prototype, systems, migration, passport, ecosystem, mechanisms, flywheels,
+  privileges, rewards, prototype, systems, migration, passport, ecosystem, mechanisms, flywheels, flywheelTransitions,
   models, organizationLoop, exchanges, stages, priorities, assumptions,
-} from './content.js';
+} from './content.js?v=3';
 
 const $ = (selector, parent = document) => parent.querySelector(selector);
 const $$ = (selector, parent = document) => [...parent.querySelectorAll(selector)];
@@ -11,14 +11,17 @@ const facts = (items, className = '') => `<dl class="facts ${className}">${list(
 const accordion = (items) => `<div class="accordion">${items.map(([title, body]) => `<details><summary>${title}</summary><p>${body}</p></details>`).join('')}</div>`;
 const table = (headings, rows, classes = '') => `<div class="table-scroll" role="region" aria-label="${headings[0]}" tabindex="0"><table class="${classes}"><thead><tr>${headings.map((label) => `<th scope="col">${label}</th>`).join('')}</tr></thead><tbody>${rows.map(([title, ...values]) => `<tr><th scope="row">${title}</th>${values.map((value) => `<td>${value}</td>`).join('')}</tr>`).join('')}</tbody></table></div>`;
 const flow = (labels) => `<ol class="linear-flow">${labels.map((label) => `<li>${label}</li>`).join('')}</ol>`;
-const sub = (title, html, note = '') => `<div class="subsection"><h3>${title}</h3>${note ? `<p class="intro">${note}</p>` : ''}${html}</div>`;
+const sub = (title, html, note = '', id = '') => `<div class="subsection"${id ? ` id="${id}"` : ''}><h3>${title}</h3>${note ? `<p class="intro">${note}</p>` : ''}${html}</div>`;
 const choices = (id, labels) => `<div class="choices" id="${id}" role="group" aria-label="${({ 'research-filters': '研究课题', 'architecture-choice': '会员价值结构', 'phone-choice': '会员价值账户入口', 'flywheel-choice': '增长飞轮', 'model-choice': '组织模式', 'stage-choice': '战略演进阶段' })[id] || '切换视图'}">${labels.map((label, index) => `<button type="button" data-choice="${index}" aria-pressed="${index === 0}">${label}</button>`).join('')}</div>`;
 const systemLinks = () => `<div class="system-links">${systems.map(([name], index) => `<a href="#system-${index + 1}"><small>${String(index + 1).padStart(2, '0')}</small>${name}</a>`).join('')}</div>`;
 
 function section(id, title, introduction, body, className = '') {
-  const [, label, english] = chapters.find(([key]) => key === id);
+  const index = chapters.findIndex(([key]) => key === id);
+  const [, label, english] = chapters[index];
+  const next = chapters[index + 1];
+  const continuation = next ? `<div class="chapter-next"><a href="#${next[0]}"><span>下一章</span><strong>${next[1]}</strong></a></div>` : '';
   return `<section id="${id}" class="chapter ${className}" aria-labelledby="heading-${id}">
-    <div class="wrap"><header class="chapter-heading"><p class="eyebrow"><span>${label}</span> <span>${english}</span></p><h2 id="heading-${id}">${title}</h2>${introduction ? `<p class="intro">${introduction}</p>` : ''}</header>${body}</div></section>`;
+    <div class="wrap"><header class="chapter-heading"><p class="eyebrow"><span>${label}</span> <span>${english}</span></p><h2 id="heading-${id}">${title}</h2>${introduction ? `<p class="intro">${introduction}</p>` : ''}</header>${body}${continuation}</div></section>`;
 }
 
 function circuit(id, labels, center, type = 'cycle') {
@@ -47,6 +50,11 @@ const miniLoops = flywheels.map(([title, labels, feedback], index) => `<article 
 const chapterMarkup = [
   section('overview', '从品牌会员出发，<br>经营长期消费者关系。', '当前处于 Stage 0。先建立自主品牌会员规模、基础权益和统一身份，再逐步深化单客经济。', `
     <div class="overview-grid">${overview.map(([title, value]) => `<div><span>${title}</span><strong>${value}</strong></div>`).join('')}</div>
+    <nav class="executive-index" aria-label="管理者快速阅读">
+      <a href="#current-stage"><strong>现在先做什么</strong><span>Stage 0 三大任务</span></a>
+      <a href="#system"><strong>经营如何落地</strong><span>六大体系和各自职责</span></a>
+      <a href="#simulator"><strong>如何计算经营价值</strong><span>商业价值模拟器</span></a>
+    </nav>
     ${sub('六大体系速览', systemLinks())}`),
   section('why', '从经营商品，<br>到经营消费者。', '在商品经营之上积累消费者资产，让一次交易能为下一次选择创造价值。', `
     <div class="feature-split growth-compare">
@@ -56,9 +64,9 @@ const chapterMarkup = [
     ${sub('五大战略机会', accordion(opportunities.map(([title, basis, meaning]) => [`${title} · ${basis}`, meaning])), '定性战略判断，供后续用真实经营数据验证。')}`),
   section('benchmark', '从跨行业案例中，<br>提取可迁移的经营能力。', '聚焦机制、适用情境和迁移局限。案例机制与商业效果因果验证采用不同证据。', `
     <div class="research-mast"><div><strong>14</strong><span>跨行业对标品牌</span></div><div><strong>5</strong><span>核心研究命题</span></div></div>
-    ${table(['研究课题', '对标品牌', '核心启示'], research.map(([label, insight], index) => [label, benchmarks.filter((item) => item[1] === index).map(([name]) => name).join('、'), insight]))}
-    ${sub('行业案例探索', choices('research-filters', ['全部案例', ...research.map(([label]) => label)]) + '<div id="benchmark-cards" class="case-grid"></div>')}
-    ${sub('三个战略级参照', `<div class="research-conclusion">${facts([['孩子王', '关系驱动'], ['欧莱雅', '洞察驱动'], ['Nespresso', '长期消费关系']])}<p>消费者洞察驱动的单客经济</p></div>`)}`, 'tone-cream'),
+    ${sub('三个战略级参照', `<div class="research-conclusion"><p>消费者洞察驱动的单客经济</p>${facts([['孩子王', '关系驱动'], ['欧莱雅', '洞察驱动'], ['Nespresso', '长期消费关系']])}</div>`)}
+    ${sub('五个研究课题', table(['研究课题', '对标品牌', '核心启示'], research.map(([label, insight], index) => [`<a href="#case-library" data-research-topic="${index + 1}">${label}</a>`, benchmarks.filter((item) => item[1] === index).map(([name]) => name).join('、'), insight])), '点击课题可查看该组案例。')}
+    ${sub('行业案例探索', choices('research-filters', ['全部案例', ...research.map(([label]) => label)]) + '<p id="research-count" class="research-count" role="status"></p><div id="benchmark-cards" class="case-grid"></div>', '打开案例，先读可迁移的做法、适用边界和证据状态。', 'case-library')}`, 'tone-cream'),
   section('strategy', '经营长期消费者关系，<br>赢得下一次选择。', '愿景是成为消费者每一次鸡蛋购买决策中的第一选择。', `
     ${facts([['使命', '经营一人，辐射一家。'], ['当前业务定位', '独立自主品牌会员运营业务'], ['长期组织定位', '事业部消费者增长中心'], ['长期北极星目标', '消费者资产总价值持续增长']], 'fact-columns')}
     <div class="feature-split subsection">
@@ -75,17 +83,24 @@ const chapterMarkup = [
       <div class="phone" aria-label="会员产品概念原型"><div class="phone-top"><span>会员产品概念原型</span><i aria-hidden="true"></i></div><div class="phone-card"><small>SUNDaily Omega-3</small><strong>每一次选择，<br>皆有心意。</strong></div>${choices('phone-choice', prototype.map(([title]) => title))}<div class="phone-state" id="phone-state" aria-live="polite"></div></div>
     </div>`, 'tone-cream'),
   section('system', '六大体系，<br>一个消费者经营中枢。', '战略设计以消费者洞察连接价值、规模、关系、资产与创新。会员生态为未来建设储备。', `
-    <div class="system-stage"><div class="system-map">${circuit('systems-map', systems.map(([label]) => label), ['消费者洞察中枢', 'Consumer Intelligence'], 'map')}</div><div id="system-brief" class="glass system-brief" aria-live="polite"></div></div>
+    <p class="system-instruction" id="system-instruction">选择图中的体系，查看它的职责。进入详情后，可以直接切换相邻体系。</p>
+    <div class="system-stage" id="system-explorer"><div class="system-map">${circuit('systems-map', systems.map(([label]) => label), ['消费者洞察中枢', 'Consumer Intelligence'], 'map')}</div><div id="system-brief" class="glass system-brief" aria-live="polite"></div></div>
     <div class="system-content" id="system-content"></div>`, 'tone-dark'),
   section('growth', '每一次消费者经营，<br>都能反哺下一次增长。', '消费贡献建立经济关系，礼遇把信任传给家庭，洞察驱动创新，真实故事帮助触达新消费者。', `
-    ${sub('十大经营机制', `<div class="mechanism-links">${mechanisms.map(([label, href]) => `<a href="${href}">${label}</a>`).join('')}</div>`)}
-    ${sub('四大增长飞轮', choices('flywheel-choice', ['全景', ...flywheels.map(([label]) => label)]) + `<div id="flywheel-panel"><div class="mini-loop-grid">${miniLoops}</div><p class="loop-linkage">消费体验推动关系传播，关系带来新增消费者。消费与反馈沉淀洞察，创新丰富商品与真实内容，内容触达再带动消费。</p></div>`, '切换至单个飞轮，可按节点与箭头方向播放、暂停或手动查看。')}`, 'tone-cream'),
+    ${sub('四大增长飞轮', '<p class="loop-linkage">消费体验推动关系传播，关系带来新增消费者。消费与反馈沉淀洞察，创新丰富商品与真实内容，内容触达再带动消费。</p>' + choices('flywheel-choice', ['全景', ...flywheels.map(([label]) => label)]) + `<div id="flywheel-panel"><div class="mini-loop-grid">${miniLoops}</div></div>`, '选择一个飞轮或点击图中节点，查看每一步如何带来下一步。', 'flywheel-explorer')}
+    ${sub('十大经营机制', `<div class="mechanism-links">${mechanisms.map(([label, href]) => `<a href="${href}">${label}</a>`).join('')}</div>`)}`, 'tone-cream'),
   section('business', '规模增长 × 单客经济。', '前期用新增和累计会员建立消费者资产基本盘。长期通过复购、忠诚、家庭消费份额和关系价值深化单客经济。', `
     <div class="value-duet"><article class="glass"><span class="eyebrow">当前重点</span><h3>规模增长</h3><p>消费者获取、新增会员与累计规模。</p></article><article class="glass"><span class="eyebrow">长期重点</span><h3>单客经济</h3><p>复购、忠诚、家庭消费份额与长期价值。</p></article></div>
     ${sub('六大商业价值', facts([['规模增长', '沉淀可识别的自主品牌会员资产。'], ['消费增量', '验证因会员机制额外发生的消费。'], ['忠诚留存', '延长关系并提升品牌第一选择意愿。'], ['经营效率', '优化获取、触达和权益投入效率。'], ['品牌关系', '以专属礼遇深化信任与家庭关爱。'], ['创新增长', '将真实需求转化为商品与场景机会。']], 'fact-columns'))}
-    ${sub('商业价值模拟器', `<div class="simulator"><form id="scenario"><div class="sim-heading"><span class="eyebrow">演示假设</span><button class="button button-small" type="reset">恢复默认</button></div>
-      ${assumptions.map(([label, value, min, max, step, unit], index) => `<div class="slider"><div><label for="assumption-${index}">${label}</label><output for="assumption-${index}"></output></div><input id="assumption-${index}" type="range" min="${min}" max="${max}" step="${step}" value="${value}"><div class="range-ends"><span>${min.toLocaleString('zh-CN')}${unit}</span><span>${max.toLocaleString('zh-CN')}${unit}</span></div></div>`).join('')}</form>
-      <div class="sim-results"><p class="eyebrow">基于上述假设计算</p><dl id="scenario-results" aria-live="polite"></dl><div id="scenario-chart" aria-hidden="true"></div></div></div><p class="note">演示值仅用于说明口径。增量商业贡献为假设增量消费额乘以贡献率，尚未扣除独立会员运营投入。</p>`, '调整规模、消费、归因及贡献率，查看测算如何变化。')}
+    ${sub('商业价值模拟器', `<div class="simulator"><form id="scenario" aria-label="商业价值测算假设"><div class="sim-heading"><span class="eyebrow">演示假设</span><button class="button button-small" type="reset">恢复默认</button></div>
+      ${assumptions.map(([label, value, min, max, step, unit], index) => `<div class="slider"><div><label for="assumption-${index}">${label}</label><output for="assumption-${index}" aria-live="off"></output></div><input id="assumption-${index}" type="range" min="${min}" max="${max}" step="${step}" value="${value}"><div class="range-ends"><span>${min.toLocaleString('zh-CN')}${unit}</span><span>${max.toLocaleString('zh-CN')}${unit}</span></div></div>`).join('')}
+      <div class="scenario-actions"><button type="button" class="button button-small" id="scenario-zero">试算零归因</button><a class="scenario-results-link" href="#scenario-result">查看测算结果</a></div></form>
+      <div class="sim-results" id="scenario-result" tabindex="-1" role="region" aria-label="商业价值测算结果"><p class="eyebrow">基于上述假设计算</p>
+        <p class="scenario-takeaway">先估算会员关联消费，再用归因占比估算增量，最后按贡献率折算商业贡献。</p>
+        <dl id="scenario-results"></dl>
+        <figure id="scenario-chart"><figcaption>金额对比 · 以会员关联消费额为 100%</figcaption><div id="scenario-bars"></div></figure>
+        <p id="scenario-announcement" role="status"></p>
+      </div></div><p class="note">演示值仅用于说明口径。实际归因占比须用对照基线验证。增量商业贡献为假设增量消费额乘以贡献率，尚未扣除独立会员运营投入。</p>`, '调整规模、消费、归因及贡献率。试算零归因时，可识别的会员消费仍计入关联消费，测算的增量和贡献均为零。', 'simulator')}
     ${sub('三层商业统计口径', facts([['会员关联消费', '所有能够识别的会员消费。'], ['会员运营影响消费', '与会员机制存在可识别关联的消费。'], ['可归因增量贡献', '相对于合理对照基线，由会员运营额外创造的价值。']], 'definition-stack'), '三层口径须分别测量，会员关联消费不能直接计作新增业绩。')}`),
   section('organization', '独立经营，协同赋能，<br>逐步升级。', '建立能够独立承担经营结果、并持续向事业部输出消费者洞察的组织能力。', `
     ${sub('当前与未来组织形态', choices('model-choice', models.map(([label]) => label)) + '<div id="model-panel" class="state-panel" aria-live="polite"></div>')}
@@ -98,13 +113,13 @@ const chapterMarkup = [
     ${choices('stage-choice', stages.map(([label], index) => `<small>Stage ${index}</small>${label}`))}
     <div id="stage-panel" class="state-panel" aria-live="polite"></div>
     ${sub('体系建设优先级', table(['经营体系', 'S0', 'S1', 'S2', 'S3', 'S4'], priorities.map((row, index) => [`<a href="#system-${index + 1}">${systems[index][0]}</a>`, ...row.map((value) => `<span class="priority" data-priority="${value}">${value}</span>`)]), 'priority-table'), '矩阵呈现定性战略优先级。预算与资源比例独立决策。')}
-    ${sub('当前阶段三大任务', facts([['建规模', '以新增会员规模为核心经营成果。'], ['建能力', '建立会员产品、统一身份、获取及持续经营能力。'], ['证价值', '逐步验证真实消费、长期忠诚与企业经营价值。']], 'fact-columns'))}`),
+    ${sub('当前阶段三大任务', facts([['建规模', '以新增会员规模为核心经营成果。'], ['建能力', '建立会员产品、统一身份、获取及持续经营能力。'], ['证价值', '逐步验证真实消费、长期忠诚与企业经营价值。']], 'fact-columns'), '', 'current-stage')}`),
   section('summary', '从品牌会员到<br>消费者增长中心。', '北极星目标是消费者资产总价值持续增长。', `
     <div class="summary-map">
       <a class="map-primary" href="#strategy"><small>战略定位</small><strong>消费者增长中心</strong><span>当前自主会员经营 → 未来全域消费者经营</span></a>
       <div class="map-pair"><a href="#business"><small>双轮商业驱动</small><strong>规模增长 × 单客经济</strong></a><a href="#value"><small>双价值主张</small><strong>经济价值 × 情感价值</strong></a></div>
       <div class="map-systems"><a href="#system" class="map-hub">消费者洞察中枢</a>${systemLinks()}</div>
-      <div class="map-pair"><a href="#growth"><small>四大增长飞轮</small><strong>消费 · 关系 · 创新 · 内容</strong></a><a href="#business"><small>商业成果</small><strong>会员规模 · 单客价值 · 全域增量</strong></a></div>
+      <div class="map-pair"><a href="#flywheel-explorer"><small>四大增长飞轮</small><strong>消费 · 关系 · 创新 · 内容</strong></a><a href="#simulator"><small>商业成果</small><strong>会员规模 · 单客价值 · 全域增量</strong></a></div>
       <a class="map-primary" href="#organization"><small>底层保障</small><strong>组织机制 · 资源配置 · 数字化能力 · 经营考核</strong></a>
     </div>
     ${facts([['短期', '独立的品牌会员增长业务。'], ['中期', '持续创造消费价值、沉淀消费者资产的经营系统。'], ['长期', '事业部理解消费者、经营消费者、发现新增商业机会的消费者增长中心。']], 'fact-columns summary-horizon')}
@@ -115,7 +130,7 @@ const chapterMarkup = [
 $('#chapters').innerHTML = chapterMarkup.join('');
 
 const indexNavigation = chapters.slice(1).map(([id, label]) => `<a href="#${id}">${label}</a>`);
-$('#nav').innerHTML = indexNavigation.slice(1, -1).join('');
+$('#nav').innerHTML = indexNavigation.slice(1).join('');
 $('#mobile-nav').innerHTML = indexNavigation.join('');
 
 function select(container, index, selector = '[data-choice]') {
@@ -144,7 +159,7 @@ function bindCircuit(element, render) {
   element.addEventListener('focusout', () => highlight(null));
   element.addEventListener('click', (event) => {
     const button = event.target.closest('[data-node]');
-    if (button) render(Number(button.dataset.node));
+    if (button) render(Number(button.dataset.node), event);
   });
 }
 
@@ -163,19 +178,36 @@ circuitDetails('#equity-loop', equity, '#equity-note');
 circuitDetails('#org-loop', organizationLoop, '#org-note');
 
 const dialog = $('#detail-dialog');
+let visibleCases = [];
+
 function openCase(index) {
   const [brand, group, background, mechanism, logic, transfer, limit, evidence, source] = benchmarks[index];
-  $('#dialog-body').innerHTML = `<span class="eyebrow">${research[group][0]}</span><h2 id="dialog-title">${brand}</h2>
-    ${facts([['品牌背景', background], ['参考机制', mechanism], ['经营逻辑', logic], ['圣迪乐迁移方向', transfer], ['迁移局限', limit], ['来源及证据状态', `${evidence}${source ? `<br><a href="${source}" target="_blank" rel="noopener noreferrer">查看官方原始资料</a>` : ''}`]])}`;
-  dialog.showModal();
+  const position = visibleCases.indexOf(index);
+  const neighborButton = (label, neighbor) => `<button type="button" class="button button-small" data-neighbor="${neighbor ?? ''}"${neighbor === undefined ? ' disabled' : ''}>${label}</button>`;
+  $('#dialog-body').innerHTML = `<span class="eyebrow">${research[group][0]}</span><h2 id="dialog-title" tabindex="-1">${brand}</h2>
+    <div class="case-navigation" role="group" aria-label="当前筛选中的案例">
+      <span>第 ${position + 1} / ${visibleCases.length} 个案例</span>
+      <div>${neighborButton('上一案例', visibleCases[position - 1])}${neighborButton('下一案例', visibleCases[position + 1])}</div>
+    </div>
+    ${facts([['圣迪乐迁移方向', transfer], ['迁移局限', limit], ['来源及证据状态', `${evidence}${source ? `<br><a href="${source}" target="_blank" rel="noopener noreferrer">查看官方原始资料</a>` : ''}`], ['参考机制', mechanism], ['经营逻辑', logic], ['品牌背景', background]])}`;
+  if (!dialog.open) dialog.showModal();
+  dialog.scrollTop = 0;
+  $('#dialog-title').focus({ preventScroll: true });
 }
-dialog.addEventListener('click', (event) => { if (event.target === dialog) dialog.close(); });
+dialog.addEventListener('click', (event) => {
+  if (event.target === dialog) dialog.close();
+  const neighbor = event.target.closest('button[data-neighbor]');
+  if (neighbor && !neighbor.disabled) openCase(Number(neighbor.dataset.neighbor));
+});
 
 function renderCases(index) {
   select($('#research-filters'), index);
-  $('#benchmark-cards').innerHTML = benchmarks.map(([name, group, , mechanism], key) => index === 0 || group === index - 1
-    ? `<button type="button" class="case-card" data-case="${key}"><small>${research[group][0]}</small><strong>${name}</strong><span>${mechanism}</span><span class="case-link">查看案例</span></button>`
-    : '').join('');
+  visibleCases = [...benchmarks.keys()].filter((key) => index === 0 || benchmarks[key][1] === index - 1);
+  $('#research-count').textContent = `显示 ${visibleCases.length} / ${benchmarks.length} 个案例`;
+  $('#benchmark-cards').innerHTML = visibleCases.map((key) => {
+    const [name, group, , mechanism, , , , , source] = benchmarks[key];
+    return `<button type="button" class="case-card" data-case="${key}" aria-haspopup="dialog" aria-controls="detail-dialog"><small>${research[group][0]}</small><strong>${name}</strong><span class="case-mechanism">${mechanism}</span><span class="case-action"><span class="case-link">查看案例</span><span class="case-evidence">${source ? '含官方资料' : '来源待复核'}</span></span></button>`;
+  }).join('');
 }
 handleChoices($('#research-filters'), renderCases);
 $('#benchmark-cards').addEventListener('click', (event) => {
@@ -249,14 +281,32 @@ const innovation = [
   ['商业转化', '由相关业务部门共同推动立项及商业决策。'], ['结果反馈', '反馈处理进度与结果，沉淀为下一轮需求研究。'],
 ];
 
-$('#system-content').innerHTML = systems.map(([name, english, task], index) => `<article id="system-${index + 1}" class="system-detail" hidden><header><p class="eyebrow">${english}</p><h3>${name}</h3><p class="intro">${task}</p></header>${systemDetails[index]()}</article>`).join('');
+$('#system-content').innerHTML = systems.map(([name, english, task], index) => {
+  const previous = systems[index - 1];
+  const next = systems[index + 1];
+  return `<article id="system-${index + 1}" class="system-detail" hidden><header>
+    <p class="eyebrow">${index + 1} / ${systems.length} · ${english}</p><h3>${name}</h3><p class="intro">${task}</p>
+    <nav class="system-read-nav" aria-label="${name}章节导航">
+      <a href="#system-explorer">返回体系图</a>
+      ${previous ? `<a href="#system-${index}">上一体系 · ${previous[0]}</a>` : ''}
+      ${next ? `<a href="#system-${index + 2}">下一体系 · ${next[0]}</a>` : ''}
+    </nav>
+  </header>${systemDetails[index]()}</article>`;
+}).join('');
 
 const systemMap = $('#systems-map');
-function renderSystem(index) {
+const systemBrief = $('#system-brief');
+systemMap.setAttribute('aria-describedby', 'system-instruction');
+$$('[data-node]', systemMap).forEach((button, index) => button.setAttribute('aria-controls', `system-brief system-${index + 1}`));
+
+function renderSystem(index, event) {
   activateCircuit(systemMap, index);
   $$('.system-detail').forEach((article, key) => { article.hidden = key !== index; });
   const [label, english, task] = systems[index];
-  $('#system-brief').innerHTML = `<span class="eyebrow">${english}</span><h3>${label}</h3><p>${task}</p><a class="button" href="#system-${index + 1}">查看体系详情</a>`;
+  systemBrief.innerHTML = `<span class="eyebrow">${index + 1} / ${systems.length} · ${english}</span><h3>${label}</h3><p>${task}</p><a class="button" href="#system-${index + 1}">查看体系详情</a>`;
+  if (event?.detail > 0 && matchMedia('(max-width: 850px)').matches && systemBrief.getBoundingClientRect().top > innerHeight - 100) {
+    systemBrief.scrollIntoView({ block: 'nearest', behavior: reducedMotion.matches ? 'instant' : 'smooth' });
+  }
 }
 bindCircuit(systemMap, renderSystem);
 renderSystem(0);
@@ -289,23 +339,23 @@ renderEcosystem(0);
 const flywheelPanel = $('#flywheel-panel');
 const panorama = flywheelPanel.innerHTML;
 let flyTimer;
+
 function stopFlywheel() {
+  if (flyTimer === undefined) return;
   clearInterval(flyTimer);
   flyTimer = undefined;
-  const button = $('#play-flywheel');
-  if (button) {
-    button.textContent = '播放飞轮';
-    button.setAttribute('aria-pressed', 'false');
-  }
+  $('#play-flywheel').textContent = '播放飞轮';
+  $('#play-flywheel').setAttribute('aria-pressed', 'false');
+  $('#wheel-current').setAttribute('aria-live', 'polite');
 }
 
 function bindPanorama() {
   $$('.mini-loop .circuit', flywheelPanel).forEach((element, index) => {
-    bindCircuit(element, () => renderFlywheel(index + 1));
+    bindCircuit(element, (step) => renderFlywheel(index + 1, step, true));
   });
 }
 
-function renderFlywheel(choice) {
+function renderFlywheel(choice, initialStep = 0, focusNode = false) {
   stopFlywheel();
   select($('#flywheel-choice'), choice);
   if (choice === 0) {
@@ -314,28 +364,65 @@ function renderFlywheel(choice) {
     return;
   }
   const [title, nodes, feedback] = flywheels[choice - 1];
-  flywheelPanel.innerHTML = `<div class="feature-split flywheel-single"><div class="panel">${circuit('active-wheel', nodes, [title, '循环增长'])}</div><div class="flywheel-text"><h4>${title}飞轮</h4><p>${feedback}</p><p class="selection-note" id="wheel-step" aria-live="polite"></p><button class="button" id="play-flywheel" aria-pressed="false">播放飞轮</button></div></div>`;
+  flywheelPanel.innerHTML = `<div class="feature-split flywheel-single">
+    <div class="panel">${circuit('active-wheel', nodes, [title, '循环增长'])}</div>
+    <div class="flywheel-text"><h4>${title}飞轮</h4><p>${feedback}</p>
+      <div class="selection-note" id="wheel-current" aria-live="polite" aria-atomic="true">
+        <span id="wheel-position"></span><strong id="wheel-step"></strong><p id="wheel-story"></p>
+      </div>
+      <div class="wheel-controls" role="group" aria-label="飞轮步骤">
+        <button type="button" class="button button-small" id="wheel-prev" aria-controls="wheel-current">上一步</button>
+        <button type="button" class="button button-small" id="play-flywheel" aria-pressed="false" aria-controls="wheel-current">播放飞轮</button>
+        <button type="button" class="button button-small" id="wheel-next" aria-controls="wheel-current">下一步</button>
+      </div>
+    </div>
+  </div>`;
   const wheel = $('#active-wheel');
-  let step = 0;
+  let step = initialStep;
+
   function showStep(index) {
-    step = index;
+    step = (index + nodes.length) % nodes.length;
     activateCircuit(wheel, step);
+    $('#wheel-position').textContent = `第 ${step + 1} / ${nodes.length} 步`;
     $('#wheel-step').textContent = `${nodes[step]} → ${nodes[(step + 1) % nodes.length]}`;
+    $('#wheel-story').textContent = flywheelTransitions[choice - 1][step];
   }
-  bindCircuit(wheel, (index) => { stopFlywheel(); showStep(index); });
-  showStep(0);
+
+  function chooseStep(index) {
+    stopFlywheel();
+    showStep(index);
+  }
+
+  bindCircuit(wheel, chooseStep);
+  showStep(initialStep);
+  if (focusNode) {
+    const node = $(`[data-node="${step}"]`, wheel);
+    node.focus({ preventScroll: true });
+    node.scrollIntoView({ block: 'nearest', behavior: 'instant' });
+  }
+  $('#wheel-prev').addEventListener('click', () => chooseStep(step - 1));
+  $('#wheel-next').addEventListener('click', () => chooseStep(step + 1));
   $('#play-flywheel').addEventListener('click', (event) => {
-    if (flyTimer) {
+    if (flyTimer !== undefined) {
       stopFlywheel();
       return;
     }
     event.currentTarget.textContent = '暂停飞轮';
     event.currentTarget.setAttribute('aria-pressed', 'true');
-    flyTimer = setInterval(() => showStep((step + 1) % nodes.length), 1000);
+    $('#wheel-current').setAttribute('aria-live', 'off');
+    flyTimer = setInterval(() => showStep(step + 1), 2500);
   });
 }
-handleChoices($('#flywheel-choice'), renderFlywheel);
+
+const flywheelChoice = $('#flywheel-choice');
+handleChoices(flywheelChoice, (index) => {
+  if ($(`[data-choice="${index}"]`, flywheelChoice).getAttribute('aria-pressed') !== 'true') renderFlywheel(index);
+});
 bindPanorama();
+
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden) stopFlywheel();
+});
 
 function renderModel(index) {
   select($('#model-choice'), index);
@@ -355,24 +442,40 @@ handleChoices($('#stage-choice'), renderStage);
 renderStage(0);
 
 const scenario = $('#scenario');
+const scenarioInputs = $$('input[type="range"]', scenario);
 const format = new Intl.NumberFormat('zh-CN', { maximumFractionDigits: 2 });
-function renderScenario() {
-  const inputs = $$('input', scenario);
-  const [size, customerRate, spend, attribution, margin] = inputs.map((input) => input.valueAsNumber);
-  inputs.forEach((input, index) => {
+function renderScenario(announce = false) {
+  const [size, customerRate, spend, attribution, margin] = scenarioInputs.map((input) => input.valueAsNumber);
+  scenarioInputs.forEach((input, index) => {
     const output = $('output', input.parentElement);
-    output.value = `${format.format(input.valueAsNumber)} ${assumptions[index][5]}`;
+    const value = `${format.format(input.valueAsNumber)} ${assumptions[index][5]}`;
+    output.value = value;
+    input.setAttribute('aria-valuetext', value);
   });
   const customers = size * customerRate / 100;
   const linked = customers * spend;
   const growth = linked * attribution / 100;
   const contribution = growth * margin / 100;
-  const results = [['消费会员数', customers, '人'], ['会员关联消费额', linked / 10000, '万元'], ['假设增量消费额', growth / 10000, '万元'], ['假设增量商业贡献', contribution / 10000, '万元']];
-  $('#scenario-results').innerHTML = results.map(([label, value, unit]) => `<div><dt>${label}</dt><dd>${format.format(value)} <small>${unit}</small></dd></div>`).join('');
-  $('#scenario-chart').innerHTML = results.slice(1).map(([label, value], index) => `<div class="scenario-bar"><span>${label}</span><i style="--bar:${100 * value / (linked / 10000)}%;--tone:${index}"></i></div>`).join('');
+  const results = [
+    ['消费会员数', customers, '人', '会员规模 × 年度消费会员占比'],
+    ['会员关联消费额', linked / 10000, '万元', '消费会员数 × 年均购买金额'],
+    ['假设增量消费额', growth / 10000, '万元', '会员关联消费额 × 可归因增量消费占比'],
+    ['假设增量商业贡献', contribution / 10000, '万元', '假设增量消费额 × 贡献率'],
+  ];
+  $('#scenario-results').innerHTML = results.map(([label, value, unit, formula]) => `<div><dt>${label}<small class="scenario-formula">${formula}</small></dt><dd>${format.format(value)} <small>${unit}</small></dd></div>`).join('');
+  $('#scenario-bars').innerHTML = results.slice(1).map(([label, value], index) => {
+    const ratio = 100 * value / (linked / 10000);
+    return `<div class="scenario-bar"><span>${label}</span><strong>${format.format(ratio)}%</strong><i aria-hidden="true" style="--bar:${ratio}%;--tone:${index}"></i></div>`;
+  }).join('');
+  if (announce) $('#scenario-announcement').textContent = `测算更新。会员关联消费额 ${format.format(linked / 10000)} 万元，假设增量消费额 ${format.format(growth / 10000)} 万元，假设增量商业贡献 ${format.format(contribution / 10000)} 万元。`;
 }
-scenario.addEventListener('input', renderScenario);
-scenario.addEventListener('reset', () => requestAnimationFrame(renderScenario));
+scenario.addEventListener('input', () => renderScenario());
+scenario.addEventListener('change', () => renderScenario(true));
+scenario.addEventListener('reset', () => requestAnimationFrame(() => renderScenario(true)));
+$('#scenario-zero').addEventListener('click', () => {
+  scenarioInputs[3].value = '0';
+  renderScenario(true);
+});
 renderScenario();
 
 const mobileNav = $('#mobile-nav');
@@ -386,28 +489,57 @@ mobileNav.addEventListener('click', (event) => { if (event.target.closest('a')) 
 
 const chapterElements = chapters.map(([id]) => document.getElementById(id));
 const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)');
+const presentButton = $('#present');
+const presentControls = $('#present-controls');
+const slideJump = $('#slide-jump');
+const slideLabel = $('#slide-label');
+const prevSlide = $('#prev-slide');
+const nextSlide = $('#next-slide');
+const fullscreenButton = $('#fullscreen');
+const presentFeedback = $('#present-feedback');
+const presentationShortcuts = $('#present-shortcuts');
+const navigationShell = $('.nav-shell');
 let currentChapter = 0;
 let presenting = false;
 let requestedFullscreen = false;
 let positionQueued = false;
 
+chapters.forEach(([, label], index) => slideJump.add(new Option(label, String(index))));
+presentButton.setAttribute('aria-controls', 'present-controls');
+presentButton.setAttribute('aria-expanded', 'false');
+
+function updatePresentationControls() {
+  const label = `${currentChapter + 1} / ${chapters.length}`;
+  if (slideLabel.value !== label) slideLabel.value = label;
+  if (slideJump.selectedIndex !== currentChapter) slideJump.selectedIndex = currentChapter;
+
+  const focused = document.activeElement;
+  prevSlide.disabled = currentChapter === 0;
+  nextSlide.disabled = currentChapter === chapters.length - 1;
+  if (focused === prevSlide && prevSlide.disabled) nextSlide.focus({ preventScroll: true });
+  if (focused === nextSlide && nextSlide.disabled) prevSlide.focus({ preventScroll: true });
+}
+
+function chapterTopInset() {
+  return presenting ? 0 : navigationShell.offsetHeight;
+}
+
 function updatePosition() {
   positionQueued = false;
-  const reference = innerHeight * 0.33;
-  currentChapter = chapterElements.reduce((active, element, index) => element.getBoundingClientRect().top <= reference ? index : active, 0);
+  const reference = chapterTopInset() + 16;
   const page = document.documentElement;
   const max = page.scrollHeight - innerHeight;
   const progress = max > 0 ? scrollY / max : 0;
+  if (scrollY <= 1) currentChapter = 0;
+  else if (max - scrollY <= 1) currentChapter = chapters.length - 1;
+  else currentChapter = chapterElements.reduce((active, element, index) => element.getBoundingClientRect().top <= reference ? index : active, 0);
+
   $('#reading-progress').style.transform = `scaleX(${Math.min(1, Math.max(0, progress))})`;
   $$('.site-header a[href^="#"]').forEach((link) => {
     if (link.hash === `#${chapters[currentChapter][0]}`) link.setAttribute('aria-current', 'location');
     else link.removeAttribute('aria-current');
   });
-  if (presenting) {
-    $('#slide-label').value = `${currentChapter + 1} / ${chapters.length} · ${chapters[currentChapter][1]}`;
-    $('#prev-slide').disabled = currentChapter === 0;
-    $('#next-slide').disabled = currentChapter === chapters.length - 1;
-  }
+  if (presenting) updatePresentationControls();
 }
 function schedulePositionUpdate() {
   if (!positionQueued) {
@@ -419,77 +551,128 @@ addEventListener('scroll', schedulePositionUpdate, { passive: true });
 addEventListener('resize', schedulePositionUpdate);
 updatePosition();
 
-function goToChapter(direction) {
-  const index = Math.min(chapters.length - 1, Math.max(0, currentChapter + direction));
-  const [id] = chapters[index];
-  history.replaceState(null, '', `#${id}`);
-  if (id === 'top') window.scrollTo({ top: 0, behavior: 'instant' });
-  else chapterElements[index].scrollIntoView({ behavior: 'instant' });
+function goToChapter(index, focusHeading = false) {
+  if (index < 0 || index >= chapters.length) return;
+  const chapter = chapterElements[index];
+  history.replaceState(null, '', `#${chapter.id}`);
+  if (index === 0) window.scrollTo({ top: 0, behavior: 'instant' });
+  else chapter.scrollIntoView({ behavior: 'instant' });
+  if (focusHeading) {
+    const heading = chapter.querySelector('h1, h2');
+    heading?.setAttribute('tabindex', '-1');
+    heading?.focus({ preventScroll: true });
+  }
   updatePosition();
 }
 
 function setPresentation(active) {
+  if (presenting === active) return;
+  updatePosition();
+  const anchor = chapterElements[currentChapter];
+  const anchorOffset = anchor.getBoundingClientRect().top - chapterTopInset();
+  const atStart = scrollY <= 1;
+
   presenting = active;
   document.body.classList.toggle('presenting', active);
-  $('#present-controls').hidden = !active;
+  presentControls.hidden = !active;
+  presentButton.setAttribute('aria-expanded', String(active));
+  if (active) toggleMenu(false);
+
+  if (!atStart) {
+    const offset = anchor.getBoundingClientRect().top - chapterTopInset();
+    window.scrollBy({ top: offset - anchorOffset, behavior: 'instant' });
+  }
+  updatePosition();
+
   if (active) {
-    toggleMenu(false);
-    $('#exit-present').focus({ preventScroll: true });
+    (nextSlide.disabled ? prevSlide : nextSlide).focus({ preventScroll: true });
   } else {
     if (requestedFullscreen && document.fullscreenElement) document.exitFullscreen().catch(() => {});
     requestedFullscreen = false;
-    $('#present').focus({ preventScroll: true });
+    presentFeedback.hidden = true;
+    presentButton.focus({ preventScroll: true });
   }
-  updatePosition();
 }
-$('#present').addEventListener('click', () => setPresentation(true));
+presentButton.addEventListener('click', () => setPresentation(true));
 $('#exit-present').addEventListener('click', () => setPresentation(false));
-$('#prev-slide').addEventListener('click', () => goToChapter(-1));
-$('#next-slide').addEventListener('click', () => goToChapter(1));
-$('#fullscreen').hidden = !document.fullscreenEnabled;
-$('#fullscreen').addEventListener('click', async () => {
+prevSlide.addEventListener('click', () => { updatePosition(); goToChapter(currentChapter - 1); });
+nextSlide.addEventListener('click', () => { updatePosition(); goToChapter(currentChapter + 1); });
+slideJump.addEventListener('change', () => goToChapter(slideJump.selectedIndex));
+
+fullscreenButton.hidden = !document.fullscreenEnabled || typeof document.documentElement.requestFullscreen !== 'function';
+fullscreenButton.addEventListener('click', async () => {
+  presentFeedback.hidden = true;
   try {
-    if (document.fullscreenElement) await document.exitFullscreen();
-    else {
+    if (document.fullscreenElement) {
+      await document.exitFullscreen();
+    } else {
       await document.documentElement.requestFullscreen();
-      requestedFullscreen = true;
+      requestedFullscreen = document.fullscreenElement === document.documentElement;
+      if (!presenting && requestedFullscreen) await document.exitFullscreen();
     }
   } catch {
-    $('#fullscreen').textContent = '专注阅读中';
+    presentFeedback.hidden = false;
   }
 });
 document.addEventListener('fullscreenchange', () => {
-  $('#fullscreen').textContent = document.fullscreenElement ? '退出全屏' : '全屏';
+  const fullscreenActive = Boolean(document.fullscreenElement);
+  if (!fullscreenActive) requestedFullscreen = false;
+  fullscreenButton.textContent = fullscreenActive ? '退出全屏' : '全屏';
+  fullscreenButton.setAttribute('aria-pressed', String(fullscreenActive));
+  presentationShortcuts.textContent = fullscreenActive ? '← / → 切换章节 · Esc 退出全屏' : '← / → 切换章节 · Esc 退出汇报';
+  schedulePositionUpdate();
 });
 document.addEventListener('keydown', (event) => {
-  if (dialog.open) return;
-  if (event.key === 'Escape' && !mobileNav.hidden) toggleMenu(false);
-  if (!presenting) return;
-  if (event.key === 'Escape') setPresentation(false);
-  if (event.altKey || event.ctrlKey || event.metaKey || event.shiftKey || event.target.matches('input, textarea, select')) return;
-  if (event.key === 'ArrowLeft' || event.key === 'ArrowRight') {
-    event.preventDefault();
-    goToChapter(event.key === 'ArrowRight' ? 1 : -1);
+  if (dialog.open || event.defaultPrevented || event.isComposing) return;
+  if (event.key === 'Escape') {
+    if (!mobileNav.hidden) {
+      toggleMenu(false);
+      menu.focus({ preventScroll: true });
+    } else if (presenting && !document.fullscreenElement) {
+      event.preventDefault();
+      setPresentation(false);
+    }
+    return;
   }
+  if (!presenting || event.altKey || event.ctrlKey || event.metaKey || event.shiftKey) return;
+  if (event.key !== 'ArrowLeft' && event.key !== 'ArrowRight') return;
+
+  const target = event.target instanceof Element ? event.target : document.activeElement;
+  const inToolbar = presentControls.contains(target);
+  if (target?.closest('input, textarea, select, [contenteditable], .table-scroll')) return;
+  if (!inToolbar && target?.closest('button, a, summary')) return;
+
+  event.preventDefault();
+  updatePosition();
+  goToChapter(currentChapter + (event.key === 'ArrowRight' ? 1 : -1), !inToolbar);
 });
 
-function navigateHash(instant = false) {
-  if (!/^#(overview|why|benchmark|strategy|value|system(?:-[1-6])?|growth|business|organization|roadmap|summary|top)$/.test(location.hash)) return;
-  const systemHash = location.hash.match(/^#system-([1-6])$/);
-  if (systemHash) renderSystem(Number(systemHash[1]) - 1);
+function navigateHash({ instant = false, focus = false } = {}) {
   const target = document.getElementById(location.hash.slice(1));
+  if (!target?.closest('main')) return;
+  const systemHash = target.id.match(/^system-([1-6])$/);
+  if (systemHash) renderSystem(Number(systemHash[1]) - 1);
+  if (focus) {
+    const destination = target.id === 'system-explorer'
+      ? $('[data-node][aria-pressed="true"]', target)
+      : $(':scope > h3, :scope > header h3, :scope > .wrap > .chapter-heading h2, :scope > .wrap h1', target) || target;
+    if (!destination.matches('button')) destination.setAttribute('tabindex', '-1');
+    destination.focus({ preventScroll: true });
+  }
   target.scrollIntoView({ behavior: instant || reducedMotion.matches ? 'instant' : 'smooth' });
 }
 document.addEventListener('click', (event) => {
   const link = event.target.closest('a[href^="#"]');
-  if (!link || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
-  if (!link.hash || !document.getElementById(link.hash.slice(1))) return;
+  if (!link || event.defaultPrevented || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+  const target = document.getElementById(link.hash.slice(1));
+  if (!target?.closest('main')) return;
   event.preventDefault();
+  if (link.hasAttribute('data-research-topic')) renderCases(Number(link.dataset.researchTopic));
   if (link.hash !== location.hash) history.pushState(null, '', link.hash);
-  navigateHash();
+  navigateHash({ focus: true });
 });
-addEventListener('hashchange', () => navigateHash(true));
-if (location.hash) requestAnimationFrame(() => navigateHash(true));
+addEventListener('hashchange', () => navigateHash({ instant: true, focus: true }));
+if (location.hash) requestAnimationFrame(() => navigateHash({ instant: true }));
 
 if ('IntersectionObserver' in window && !reducedMotion.matches) {
   const reveal = new IntersectionObserver((entries) => {
@@ -499,8 +682,11 @@ if ('IntersectionObserver' in window && !reducedMotion.matches) {
     });
   }, { threshold: 0.13 });
   $$('.chapter-heading, .growth-compare, .system-stage, .summary-map').forEach((element) => reveal.observe(element));
-  const growthVisibility = new IntersectionObserver(([entry]) => {
+}
+
+if ('IntersectionObserver' in window) {
+  const wheelVisibility = new IntersectionObserver(([entry]) => {
     if (!entry.isIntersecting) stopFlywheel();
   });
-  growthVisibility.observe($('#growth'));
+  wheelVisibility.observe(flywheelPanel);
 }

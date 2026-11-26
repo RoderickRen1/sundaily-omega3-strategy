@@ -13,8 +13,8 @@
   <link rel="canonical" href="https://roderickren1.github.io/sundaily-omega3-strategy/">
   <title>圣迪乐 Omega-3｜会员运营战略体系 V1.0</title>
   <link rel="icon" href="./assets/mark.svg" type="image/svg+xml">
-  <link rel="stylesheet" href="./style.css?v=2">
-  <script type="module" src="./app.js"></script>
+  <link rel="stylesheet" href="./style.css?v=3">
+  <script type="module" src="./app.js?v=3"></script>
 </head>
 <body>
   <a class="skip" href="#overview">跳至战略总览</a>
@@ -36,7 +36,7 @@
           <h1>经营一人，<br><em>辐射一家。</em></h1>
           <p class="hero-english" lang="en">From Consumer to Family.</p>
           <p class="hero-deck">从自主品牌会员经营出发，构建以消费者洞察为驱动、以规模增长与单客经济为双轮的长期消费者经营体系。</p>
-          <div class="hero-actions"><a href="#overview" class="button button-primary">探索完整战略</a><a href="#summary" class="button">查看战略一张图</a></div>
+          <div class="hero-actions"><a href="#overview" class="button button-primary">先读战略总览</a><a href="#summary" class="button">直达战略一张图</a></div>
         </div>
         <figure class="hero-art" aria-label="以蛋形雕塑与三层轨道呈现从消费者到家庭与社会关系的辐射">
           <div class="hero-egg" aria-hidden="true"></div>
@@ -52,8 +52,20 @@
     <div id="chapters"></div>
   </main>
   <footer class="site-footer"><div class="wrap"><span>圣迪乐 Omega-3 · 会员运营战略体系 V1.0</span><a href="#top">回到开场</a></div></footer>
-  <div id="present-controls" class="present-controls" hidden>
-    <button class="button button-small" id="prev-slide">上一章</button><output id="slide-label" aria-live="polite"></output><button class="button button-small" id="next-slide">下一章</button><button class="button button-small" id="fullscreen">全屏</button><button class="button button-small" id="exit-present">退出汇报</button>
+  <div id="present-controls" class="present-controls" role="group" aria-label="汇报控制" hidden>
+    <div class="present-position">
+      <strong>汇报模式</strong>
+      <select id="slide-jump" aria-label="当前章节与跳转"></select>
+      <output id="slide-label" aria-label="章节进度" aria-live="polite"></output>
+    </div>
+    <div class="present-actions">
+      <button type="button" class="button button-small" id="prev-slide">上一章</button>
+      <button type="button" class="button button-small" id="next-slide">下一章</button>
+      <button type="button" class="button button-small" id="fullscreen" aria-pressed="false">全屏</button>
+      <button type="button" class="button button-small" id="exit-present">退出汇报</button>
+    </div>
+    <p id="present-shortcuts" class="present-shortcuts">← / → 切换章节 · Esc 退出汇报</p>
+    <p id="present-feedback" class="present-feedback" role="status" hidden>无法启用全屏，仍可继续汇报。</p>
   </div>
   <dialog id="detail-dialog" aria-labelledby="dialog-title"><header><p class="eyebrow">行业机制参考</p><form method="dialog"><button class="button button-small" aria-label="关闭案例详情">关闭</button></form></header><div id="dialog-body"></div></dialog>
 </body>
