@@ -2,12 +2,12 @@ import {
   chapters, overview, opportunities, equity, research, benchmarks, family, dimensions, principles,
   privileges, rewards, prototype, systems, migration, passport, ecosystem, mechanisms, flywheels, flywheelTransitions,
   models, organizationLoop, exchanges, stages, priorities, assumptions,
-} from './content.js?v=4';
-import { v2Overview, moduleDirectory, bindV2Overview, v2ModuleLinks } from './strategy-v2.js?v=4';
-import { conversionModules, bindConversionModules } from './growth-conversion.js?v=4';
-import { rhythmModules, bindRhythmModules } from './growth-rhythm.js?v=4';
-import { experienceLab, bindExperienceLab } from './experience-lab.js?v=4';
-import { growthLab, bindGrowthLab } from './growth-lab.js?v=4';
+} from './content.js?v=5';
+import { v2Overview, moduleDirectory, bindV2Overview, v2ModuleLinks } from './strategy-v2.js?v=5';
+import { conversionModules, bindConversionModules } from './growth-conversion.js?v=5';
+import { rhythmModules, bindRhythmModules } from './growth-rhythm.js?v=5';
+import { experienceLab, bindExperienceLab } from './experience-lab.js?v=5';
+import { growthLab, bindGrowthLab } from './growth-lab.js?v=5';
 
 const $ = (selector, parent = document) => parent.querySelector(selector);
 const $$ = (selector, parent = document) => [...parent.querySelectorAll(selector)];

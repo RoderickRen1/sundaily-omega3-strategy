@@ -1,7 +1,7 @@
 import {
   HOUSEHOLDS, FEEDBACK_OPTIONS, EVENT_TYPES, PLAN_LABELS, LIFECYCLE_LABELS, RELATIONSHIP_LABELS,
   dispatchConsumer, getConsumerState, subscribeConsumer, resetConsumer, estimateWindow, decideNextAction,
-} from './consumer-engine.js?v=4';
+} from './consumer-engine.js?v=5';
 
 const numeric = new Intl.NumberFormat('zh-CN', { maximumFractionDigits: 2 });
 const amount = (value) => numeric.format(value);
@@ -212,7 +212,7 @@ export function bindGrowthLab(root = document) {
 
     q('#gl-home').value = state.activeHome;
     q('#gl-day').textContent = `第 ${state.day} 天`;
-    forecastForm.elements.stock.value = window.remaining;
+    forecastForm.elements.stock.value = window.remaining ?? '';
     forecastForm.elements.rate.value = home.rate;
     forecastForm.elements.usualDays.value = home.usualDays;
     for (const key of ['request', 'permission', 'authorization', 'pendingOrder', 'serviceOpen']) {
@@ -225,8 +225,8 @@ export function bindGrowthLab(root = document) {
     });
 
     q('#gl-window').innerHTML = `
-      ${metrics([['估计需求窗口', `第 ${window.start}–${window.end} 天`], ['估计剩余库存', `${amount(window.remaining)} 枚`]])}
-      ${chart(window, home, state.day)}<p class="gl-chart-key"><span>库存变化</span><span>需求窗口</span></p>`;
+      ${metrics([['估计需求窗口', window.start == null ? '未知' : `第 ${window.start}–${window.end} 天`], ['估计剩余库存', window.remaining == null ? '未知' : `${amount(window.remaining)} 枚`]])}
+      ${window.start == null ? '' : chart(window, home, state.day) + '<p class="gl-chart-key"><span>库存变化</span><span>需求窗口</span></p>'}`;
     q('#gl-window-reason').textContent = `${window.confidence}。 ${window.reason}`;
     q('#gl-decision').innerHTML = `<div class="gl-decision-result" data-outcome="${action.outcome}">
       <span class="gl-outcome">${outcomeLabels[action.outcome]}</span><strong>${escaped(action.title)}</strong>
@@ -237,7 +237,7 @@ export function bindGrowthLab(root = document) {
 
     const dimensions = [
       ['Lifecycle 消费阶段', LIFECYCLE_LABELS[state.lifecycle], '业务记录'],
-      ['Demand 需求状态', state.day >= window.start ? '进入估计需求窗口' : '等待预计窗口', '模型估计'],
+      ['Demand 需求状态', window.start == null ? '未知' : state.day >= window.start && state.day <= window.end ? '进入估计需求窗口' : '等待预计窗口', '模型估计'],
       ['Relationship 品牌关系', RELATIONSHIP_LABELS[state.relationship], '消费者自述'],
       ['Rhythm 周期计划', PLAN_LABELS[home.plan], '消费者自述'],
       ['Service 服务状态', home.request ? '有主动请求' : home.serviceOpen ? '售后进行中' : home.pendingOrder ? '待履约' : '暂无待处理服务', home.request ? '消费者自述' : '业务记录'],

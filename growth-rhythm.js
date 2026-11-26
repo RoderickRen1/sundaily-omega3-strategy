@@ -1,4 +1,4 @@
-import { subscribeConsumer, dispatchConsumer, estimateWindow, decideNextAction, PLAN_LABELS, LIFECYCLE_LABELS, RELATIONSHIP_LABELS } from './consumer-engine.js?v=4';
+import { subscribeConsumer, dispatchConsumer, estimateWindow, decideNextAction, PLAN_LABELS, LIFECYCLE_LABELS, RELATIONSHIP_LABELS } from './consumer-engine.js?v=5';
 
 const periods = [
   ['家庭消耗周期', '鸡蛋从进入家庭库存到被食用的速度。记录这个家庭吃得多快。', [0, 7, 10], '模拟消耗窗口 7–10 天'],
@@ -194,7 +194,7 @@ export function bindRhythmModules(root = document) {
     const feedback = feedbacks.find(([key]) => key === home.feedback?.value);
     const data = {
       lifecycle: LIFECYCLE_LABELS[state.lifecycle],
-      demand: `第 ${window.start}–${window.end} 天 · ${window.confidence}`,
+      demand: window.start == null ? '未知 · 等待库存或履约记录' : `第 ${window.start}–${window.end} 天 · ${window.confidence}`,
       relationship: RELATIONSHIP_LABELS[state.relationship],
       plan: PLAN_LABELS[home.plan],
       service: state.request ? '消费者主动请求' : state.serviceOpen ? '售后处理中' : state.pendingOrder ? '待履约' : '无待处理服务',
@@ -202,7 +202,7 @@ export function bindRhythmModules(root = document) {
     };
     Object.entries(data).forEach(([key, value]) => { root.querySelector(`[data-dimension="${key}"]`).textContent = value ?? '待识别'; });
     root.querySelector('#rhythm-feedback-home').textContent = home.name;
-    root.querySelector('#rhythm-feedback-window').textContent = ` · 模拟第 ${state.day} 天 · 预计第 ${window.start}–${window.end} 天需要补给`;
+    root.querySelector('#rhythm-feedback-window').textContent = ` · 模拟第 ${state.day} 天 · ${window.start == null ? '补货窗口未知' : `预计第 ${window.start}–${window.end} 天需要补给`}`;
     root.querySelector('#rhythm-feedback-result').textContent = feedback
       ? `最近反馈「${feedback[1]}」。${decision.title}。 ${decision.reason}`
       : `当前推演：${decision.title}。 ${decision.reason}`;

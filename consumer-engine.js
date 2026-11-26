@@ -1,3 +1,5 @@
+import { initializeSandbox, forecastSandbox, evaluateSandbox, runSandboxAction, benefitEntries } from './sandbox-state.js?v=5';
+
 export const HOUSEHOLDS = [
   { id: 'mine', label: '我的家' },
   { id: 'parents', label: '爸妈的家' },
@@ -71,14 +73,20 @@ function initialState() {
 }
 
 let store = initialState();
+let sandboxRun = 0;
 
 function bounded(value, low, high) {
   const number = Number(value);
   return Number.isFinite(number) ? Math.max(low, Math.min(number, high)) : null;
 }
 
-function appendEvent(label, category, home, detail) {
-  store.events.unshift({ day: store.day, label, category, home, detail });
+function appendEvent(label, category, home, detail, object = '') {
+  const preceding = store.events[0];
+  if (store.sandbox && preceding?.day === store.day && preceding.label === label &&
+      preceding.home === home && preceding.detail === detail && preceding.object === object) return;
+  const serial = store.sandbox ? ++store.sandbox.eventSerial : store.events.length + 1;
+  const time = '09:' + String(store.events.filter(event => event.day === store.day).length % 60).padStart(2, '0');
+  store.events.unshift({ id: 'EV-' + serial, day: store.day, time, label, category, home, detail, object });
   if (store.events.length > 40) store.events.length = 40;
 }
 
@@ -101,11 +109,13 @@ function publish() {
 }
 
 export function resetConsumer() {
+  if (store.sandbox) return dispatchConsumer('sandbox-start', {id:store.sandbox.id});
   store = initialState();
   return publish();
 }
 
 export function estimateWindow(plan, today = store.day) {
+  if (plan.sandbox) return forecastSandbox(plan, today);
   const remaining = Math.max(0, plan.stock - plan.rate * Math.max(0, today - plan.stockDay));
   const fromStock = today + remaining / plan.rate;
   const fromCadence = Math.max(today, plan.lastPurchase + plan.usualDays);
@@ -129,6 +139,7 @@ const rules = [
 
 export function decideNextAction(state = getConsumerState()) {
   const home = state.homes[state.activeHome];
+  if (state.sandbox) return evaluateSandbox(state, home, estimateWindow(home, state.day));
   const trace = rules.map((rule) => ({ rule, status: 'skipped', detail: '当前判断已结束。' }));
   const mark = (index, status, detail) => {
     trace[index] = { rule: rules[index], status, detail };
@@ -307,6 +318,12 @@ function updateHome(home, payload) {
   }
   setPlan(home, payload.plan);
   if (previousPlan !== home.plan) changed.push('服务层级');
+  if (home.sandbox && changed.includes('库存')) home.stockSource = '消费者自述';
+  if (home.sandbox && previousPlan !== home.plan && ['flex', 'care'].includes(home.plan)) {
+    home.cadence = home.usualDays;
+    home.nextConfirm = store.day + home.cadence;
+    store.sandbox.createdPlans++;
+  }
   if (changed.length) {
     const label = ['none', 'cancelled'].includes(previousPlan) && previousPlan !== home.plan ? '计划创建' : '计划调整';
     appendEvent(label, '消费者自述', home.id, `已更新${changed.join('、')}。`);
@@ -314,6 +331,43 @@ function updateHome(home, payload) {
 }
 
 export function dispatchConsumer(type, payload = {}) {
+  if (type === 'sandbox-start') {
+    store = initialState();
+    initializeSandbox(store, payload.id);
+    store.sandbox.run = ++sandboxRun;
+    appendEvent('entry_view','真实模拟事件','mine',store.sandbox.source);
+    return publish();
+  }
+  if (store.sandbox) {
+    const home = store.homes[payload.home ?? store.activeHome];
+    if (!home) return getConsumerState();
+    let action = type;
+    let data = payload;
+    if (type === 'feedback') action = 'sandbox-feedback';
+    if (type === 'event') {
+      const event = payload.type;
+      const eventActions = {register:'register-demo','purchase-verified':'verify-demo',payment:'order-demo',fulfill:'fulfill-demo',
+        permission:'sandbox-permission',feedback:'sandbox-feedback','plan-create':'sandbox-plan','plan-adjust':'sandbox-plan',pause:'sandbox-plan-step',
+        cancel:'sandbox-plan-step',aftersales:'sandbox-service'};
+      action = eventActions[event] ?? type;
+      if (event === 'purchase-verified') data = {...payload,value:'pass'};
+      if (event === 'fulfill') data = {...payload,value:store.sandbox.orders.find(order=>order.home===home.id&&order.status==='paid')?.id};
+      if (event === 'permission') data = {...payload,value:'replenishment',enabled:payload.granted ?? true};
+      if (event === 'feedback') data = {...payload,value:payload.value ?? 'needed'};
+      if (event === 'pause' || event === 'cancel') data = {...payload,value:event};
+      if (event === 'aftersales') data = {...payload,value:payload.resolved ? 'resolve' : 'open'};
+    }
+    if (/^(sandbox-|register-demo|verify-demo|order-demo|fulfill-demo|redeem-demo)/.test(action)) {
+      const before = benefitEntries(store);
+      if (!runSandboxAction(store, home, action, data, appendEvent)) return getConsumerState();
+      for (const benefit of benefitEntries(store)) {
+        if (benefit.status === '可使用' && before.find(item => item.id === benefit.id).status === '待解锁') {
+          appendEvent('benefit_unlocked','真实模拟事件',home.id,benefit.title,benefit.id);
+        }
+      }
+      return publish();
+    }
+  }
   const homeId = payload.home ?? store.activeHome;
   if (!Object.hasOwn(store.homes, homeId)) return getConsumerState();
   const home = store.homes[homeId];
@@ -328,6 +382,15 @@ export function dispatchConsumer(type, payload = {}) {
       const days = Math.round(bounded(payload.days ?? 1, 1, 60) ?? 1);
       store.day += days;
       appendEvent('模拟时钟推进', '模型估计', store.activeHome, `推进 ${days} 天并重算需求窗口。`);
+      if (store.sandbox) for (const household of Object.values(store.homes)) {
+        const window = estimateWindow(household);
+        if (household.authorization && store.permission && !household.pendingOrder && !household.serviceOpen &&
+            !['paused','cancelled'].includes(household.plan) && window.start != null &&
+            window.start > store.day - days && window.start <= store.day && household.windowRecorded !== window.start) {
+          household.windowRecorded = window.start;
+          appendEvent('replenishment_window_entered','模型估计',household.id,`第 ${window.start} 天进入预计补货窗口。`);
+        }
+      }
       break;
     }
     case 'feedback':
@@ -361,6 +424,10 @@ export function dispatchConsumer(type, payload = {}) {
       const active = store.homes[store.activeHome];
       if (decision.kind === 'outbound') store.lastContact = store.day;
       if (decision.kind === 'service') {
+        if (store.sandbox && active.serviceOpen) {
+          runSandboxAction(store, active, 'sandbox-service', {value:'resolve'}, appendEvent);
+          return publish();
+        }
         if (active.serviceUrgent) active.serviceUrgent = false;
         else active.request = false;
       }
