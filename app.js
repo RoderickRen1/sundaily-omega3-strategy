@@ -2,7 +2,12 @@ import {
   chapters, overview, opportunities, equity, research, benchmarks, family, dimensions, principles,
   privileges, rewards, prototype, systems, migration, passport, ecosystem, mechanisms, flywheels, flywheelTransitions,
   models, organizationLoop, exchanges, stages, priorities, assumptions,
-} from './content.js?v=3';
+} from './content.js?v=4';
+import { v2Overview, moduleDirectory, bindV2Overview, v2ModuleLinks } from './strategy-v2.js?v=4';
+import { conversionModules, bindConversionModules } from './growth-conversion.js?v=4';
+import { rhythmModules, bindRhythmModules } from './growth-rhythm.js?v=4';
+import { experienceLab, bindExperienceLab } from './experience-lab.js?v=4';
+import { growthLab, bindGrowthLab } from './growth-lab.js?v=4';
 
 const $ = (selector, parent = document) => parent.querySelector(selector);
 const $$ = (selector, parent = document) => [...parent.querySelectorAll(selector)];
@@ -47,8 +52,23 @@ function circuit(id, labels, center, type = 'cycle') {
 
 const miniLoops = flywheels.map(([title, labels, feedback], index) => `<article class="mini-loop">
   ${circuit(`panorama-${index}`, labels, [title, '持续反哺'])}<p>${feedback}</p></article>`).join('');
+const businessSimulator = sub('商业价值模拟器', `<div class="simulator"><form id="scenario" aria-label="商业价值测算假设"><div class="sim-heading"><span class="eyebrow">演示假设</span><button class="button button-small" type="reset">恢复默认</button></div>
+      ${assumptions.map(([label, value, min, max, step, unit], index) => `<div class="slider"><div><label for="assumption-${index}">${label}</label><output for="assumption-${index}" aria-live="off"></output></div><input id="assumption-${index}" type="range" min="${min}" max="${max}" step="${step}" value="${value}"><div class="range-ends"><span>${min.toLocaleString('zh-CN')}${unit}</span><span>${max.toLocaleString('zh-CN')}${unit}</span></div></div>`).join('')}
+      <div class="scenario-actions"><button type="button" class="button button-small" id="scenario-zero">试算零归因</button><a class="scenario-results-link" href="#scenario-result">查看测算结果</a></div></form>
+      <div class="sim-results" id="scenario-result" tabindex="-1" role="region" aria-label="商业价值测算结果"><p class="eyebrow">基于上述假设计算</p>
+        <p class="scenario-takeaway">先估算会员关联消费，再用归因占比估算增量，最后按贡献率折算商业贡献。</p>
+        <dl id="scenario-results"></dl>
+        <figure id="scenario-chart"><figcaption>金额对比 · 以会员关联消费额为 100%</figcaption><div id="scenario-bars"></div></figure>
+        <p id="scenario-announcement" role="status"></p>
+      </div></div><p class="note">演示值仅用于说明口径。实际归因占比须用对照基线验证。增量商业贡献为假设增量消费额乘以贡献率，尚未扣除独立会员运营投入。</p>`, '调整规模、消费、归因及贡献率。试算零归因时，可识别的会员消费仍计入关联消费，测算的增量和贡献均为零。', 'simulator');
+
+const strategyChapters = chapters.slice(
+  chapters.findIndex(([id]) => id === 'why'),
+  chapters.findIndex(([id]) => id === 'growth-strategy'),
+);
 const chapterMarkup = [
   section('overview', '从品牌会员出发，<br>经营长期消费者关系。', '当前处于 Stage 0。先建立自主品牌会员规模、基础权益和统一身份，再逐步深化单客经济。', `
+    ${v2Overview()}
     <div class="overview-grid">${overview.map(([title, value]) => `<div><span>${title}</span><strong>${value}</strong></div>`).join('')}</div>
     <nav class="executive-index" aria-label="管理者快速阅读">
       <a href="#current-stage"><strong>现在先做什么</strong><span>Stage 0 三大任务</span></a>
@@ -56,6 +76,9 @@ const chapterMarkup = [
       <a href="#simulator"><strong>如何计算经营价值</strong><span>商业价值模拟器</span></a>
     </nav>
     ${sub('六大体系速览', systemLinks())}`),
+  section('strategy-v1', '经营一人，<br>辐射一家。', '从自主品牌会员经营出发，构建以消费者洞察为驱动、以规模增长与单客经济为双轮的长期消费者经营体系。', `
+    <p class="v1-phrase" lang="en">From Consumer to Family.</p>
+    <nav class="v2-module-index" aria-label="V1.0 原有战略章节">${strategyChapters.map(([id, label], index) => `<a href="#${id}"><small>${String(index + 1).padStart(2, '0')}</small><span>${label}</span></a>`).join('')}</nav>`),
   section('why', '从经营商品，<br>到经营消费者。', '在商品经营之上积累消费者资产，让一次交易能为下一次选择创造价值。', `
     <div class="feature-split growth-compare">
       <div class="panel"><p class="eyebrow">传统交易驱动</p><h3>从投入走向成交</h3>${flow(['资源投入', '市场触达', '商品成交', '销售收入'])}<p>销售收入是单次交易链路的商业结果。</p></div>
@@ -64,6 +87,13 @@ const chapterMarkup = [
     ${sub('五大战略机会', accordion(opportunities.map(([title, basis, meaning]) => [`${title} · ${basis}`, meaning])), '定性战略判断，供后续用真实经营数据验证。')}`),
   section('benchmark', '从跨行业案例中，<br>提取可迁移的经营能力。', '聚焦机制、适用情境和迁移局限。案例机制与商业效果因果验证采用不同证据。', `
     <div class="research-mast"><div><strong>14</strong><span>跨行业对标品牌</span></div><div><strong>5</strong><span>核心研究命题</span></div></div>
+    <details class="v2-evidence-details"><summary>资料证据与经营口径</summary>${facts([
+      ['已确认战略共识', '圣迪乐的经营原则、Stage 0 优先级和长期组织方向。'],
+      ['待验证经营假设', '待通过消费者研究、用户测试及有对照的经营试点验证。'],
+      ['已核验行业事实', '以各案例所列原始资料及其覆盖范围为准。未找到一手资料的内容标明来源待复核。'],
+      ['模拟经营数据', '用于展示计算、比较和规则反馈。'],
+      ['产品概念演示', '使用会话内虚拟状态展示前后台行为。'],
+    ])}</details>
     ${sub('三个战略级参照', `<div class="research-conclusion"><p>消费者洞察驱动的单客经济</p>${facts([['孩子王', '关系驱动'], ['欧莱雅', '洞察驱动'], ['Nespresso', '长期消费关系']])}</div>`)}
     ${sub('五个研究课题', table(['研究课题', '对标品牌', '核心启示'], research.map(([label, insight], index) => [`<a href="#case-library" data-research-topic="${index + 1}">${label}</a>`, benchmarks.filter((item) => item[1] === index).map(([name]) => name).join('、'), insight])), '点击课题可查看该组案例。')}
     ${sub('行业案例探索', choices('research-filters', ['全部案例', ...research.map(([label]) => label)]) + '<p id="research-count" class="research-count" role="status"></p><div id="benchmark-cards" class="case-grid"></div>', '打开案例，先读可迁移的做法、适用边界和证据状态。', 'case-library')}`, 'tone-cream'),
@@ -92,15 +122,7 @@ const chapterMarkup = [
   section('business', '规模增长 × 单客经济。', '前期用新增和累计会员建立消费者资产基本盘。长期通过复购、忠诚、家庭消费份额和关系价值深化单客经济。', `
     <div class="value-duet"><article class="glass"><span class="eyebrow">当前重点</span><h3>规模增长</h3><p>消费者获取、新增会员与累计规模。</p></article><article class="glass"><span class="eyebrow">长期重点</span><h3>单客经济</h3><p>复购、忠诚、家庭消费份额与长期价值。</p></article></div>
     ${sub('六大商业价值', facts([['规模增长', '沉淀可识别的自主品牌会员资产。'], ['消费增量', '验证因会员机制额外发生的消费。'], ['忠诚留存', '延长关系并提升品牌第一选择意愿。'], ['经营效率', '优化获取、触达和权益投入效率。'], ['品牌关系', '以专属礼遇深化信任与家庭关爱。'], ['创新增长', '将真实需求转化为商品与场景机会。']], 'fact-columns'))}
-    ${sub('商业价值模拟器', `<div class="simulator"><form id="scenario" aria-label="商业价值测算假设"><div class="sim-heading"><span class="eyebrow">演示假设</span><button class="button button-small" type="reset">恢复默认</button></div>
-      ${assumptions.map(([label, value, min, max, step, unit], index) => `<div class="slider"><div><label for="assumption-${index}">${label}</label><output for="assumption-${index}" aria-live="off"></output></div><input id="assumption-${index}" type="range" min="${min}" max="${max}" step="${step}" value="${value}"><div class="range-ends"><span>${min.toLocaleString('zh-CN')}${unit}</span><span>${max.toLocaleString('zh-CN')}${unit}</span></div></div>`).join('')}
-      <div class="scenario-actions"><button type="button" class="button button-small" id="scenario-zero">试算零归因</button><a class="scenario-results-link" href="#scenario-result">查看测算结果</a></div></form>
-      <div class="sim-results" id="scenario-result" tabindex="-1" role="region" aria-label="商业价值测算结果"><p class="eyebrow">基于上述假设计算</p>
-        <p class="scenario-takeaway">先估算会员关联消费，再用归因占比估算增量，最后按贡献率折算商业贡献。</p>
-        <dl id="scenario-results"></dl>
-        <figure id="scenario-chart"><figcaption>金额对比 · 以会员关联消费额为 100%</figcaption><div id="scenario-bars"></div></figure>
-        <p id="scenario-announcement" role="status"></p>
-      </div></div><p class="note">演示值仅用于说明口径。实际归因占比须用对照基线验证。增量商业贡献为假设增量消费额乘以贡献率，尚未扣除独立会员运营投入。</p>`, '调整规模、消费、归因及贡献率。试算零归因时，可识别的会员消费仍计入关联消费，测算的增量和贡献均为零。', 'simulator')}
+    <p class="decision-lab-link"><a class="button" href="#simulator">打开商业价值模拟器</a></p>
     ${sub('三层商业统计口径', facts([['会员关联消费', '所有能够识别的会员消费。'], ['会员运营影响消费', '与会员机制存在可识别关联的消费。'], ['可归因增量贡献', '相对于合理对照基线，由会员运营额外创造的价值。']], 'definition-stack'), '三层口径须分别测量，会员关联消费不能直接计作新增业绩。')}`),
   section('organization', '独立经营，协同赋能，<br>逐步升级。', '建立能够独立承担经营结果、并持续向事业部输出消费者洞察的组织能力。', `
     ${sub('当前与未来组织形态', choices('model-choice', models.map(([label]) => label)) + '<div id="model-panel" class="state-panel" aria-live="polite"></div>')}
@@ -125,13 +147,27 @@ const chapterMarkup = [
     ${facts([['短期', '独立的品牌会员增长业务。'], ['中期', '持续创造消费价值、沉淀消费者资产的经营系统。'], ['长期', '事业部理解消费者、经营消费者、发现新增商业机会的消费者增长中心。']], 'fact-columns summary-horizon')}
     <details class="scope-note"><summary>方案边界与待验证事项</summary><p>实际会员目标、年度预算、权益成本与返利比例、KPI 权重、人员编制、数字化选型、试点与 SOP、渠道数据可用范围、合作协议与品牌体验资源均待确认。站内机制为战略设计，商业模拟为演示假设，行业案例按来源状态标注。</p></details>
     <div class="closing"><img src="./assets/mark.svg" alt="" width="52" height="52"><p>经营一人，辐射一家。</p><span lang="en">Every choice matters. Every family matters.</span></div>`, 'tone-dark'),
+  section('growth-strategy', '把战略变成可重复的经营能力。', '用利益降低门槛，用需求建立习惯，用体验巩固忠诚。沿六个模块从一次购买走向长期的家庭补给。', `
+    ${moduleDirectory()}${conversionModules()}${rhythmModules()}`, 'v2-growth'),
+  section('experience-lab', '体验同一个家庭，<br>如何被持续服务。', '在会员前台做一次选择，同时观察 Growth Console 里的消费者档案、需求与经营动作如何响应。', experienceLab(), 'v2-lab v2-experience'),
+  section('growth-lab', '看见下一步，<br>验证真实增量。', '在模拟经营台选择家庭、调整假设、提交反馈。用同一份状态解释补给窗口与决策，再用比较工具验证商业口径。', `${growthLab()}${businessSimulator}`, 'v2-lab v2-validation'),
 ];
 
 $('#chapters').innerHTML = chapterMarkup.join('');
 
-const indexNavigation = chapters.slice(1).map(([id, label]) => `<a href="#${id}">${label}</a>`);
-$('#nav').innerHTML = indexNavigation.slice(1).join('');
-$('#mobile-nav').innerHTML = indexNavigation.join('');
+const primaryChapters = [
+  ['overview', '战略总览', ''],
+  ['strategy-v1', '完整战略', 'V1.0'],
+  ['growth-strategy', '经营深化', 'V2.0'],
+  ['experience-lab', '产品体验实验室', ''],
+  ['growth-lab', '商业验证实验室', ''],
+];
+$('#nav').innerHTML = primaryChapters.map(([id, label, version]) => `<a href="#${id}">${label}${version ? ` <small>${version}</small>` : ''}</a>`).join('');
+$('#mobile-nav').innerHTML = [
+  ['SUNDaily Consumer OS', primaryChapters],
+  ['V1.0 · 完整战略', strategyChapters],
+  ['V2.0 · 经营深化', v2ModuleLinks],
+].map(([heading, links]) => `<div class="directory-group"><strong>${heading}</strong>${links.map(([id, label]) => `<a href="#${id}">${label}</a>`).join('')}</div>`).join('');
 
 function select(container, index, selector = '[data-choice]') {
   $$(selector, container).forEach((button, key) => button.setAttribute('aria-pressed', String(key === index)));
@@ -535,8 +571,11 @@ function updatePosition() {
   else currentChapter = chapterElements.reduce((active, element, index) => element.getBoundingClientRect().top <= reference ? index : active, 0);
 
   $('#reading-progress').style.transform = `scaleX(${Math.min(1, Math.max(0, progress))})`;
+  const chapterId = chapters[currentChapter][0];
+  const v1Chapter = chapterId === 'strategy-v1' || strategyChapters.some(([id]) => id === chapterId);
   $$('.site-header a[href^="#"]').forEach((link) => {
-    if (link.hash === `#${chapters[currentChapter][0]}`) link.setAttribute('aria-current', 'location');
+    const targetId = link.hash.slice(1);
+    if (targetId === chapterId || (targetId === 'strategy-v1' && v1Chapter && link.closest('#nav'))) link.setAttribute('aria-current', 'location');
     else link.removeAttribute('aria-current');
   });
   if (presenting) updatePresentationControls();
@@ -672,6 +711,11 @@ document.addEventListener('click', (event) => {
   navigateHash({ focus: true });
 });
 addEventListener('hashchange', () => navigateHash({ instant: true, focus: true }));
+bindV2Overview();
+bindConversionModules();
+bindRhythmModules();
+bindExperienceLab();
+bindGrowthLab();
 if (location.hash) requestAnimationFrame(() => navigateHash({ instant: true }));
 
 if ('IntersectionObserver' in window && !reducedMotion.matches) {
