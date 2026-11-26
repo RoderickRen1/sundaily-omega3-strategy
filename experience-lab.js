@@ -1,8 +1,8 @@
 import {
   HOUSEHOLDS, LIFECYCLE_LABELS, PLAN_LABELS, subscribeConsumer, dispatchConsumer,
   estimateWindow, decideNextAction, resetConsumer, getConsumerState,
-} from './consumer-engine.js?v=5';
-import { SCENARIOS, SPECS, benefitEntries } from './sandbox-state.js?v=5';
+} from './consumer-engine.js?v=6';
+import { SCENARIOS, SPECS, benefitEntries } from './sandbox-state.js?v=6';
 
 const escape = value => String(value ?? '').replace(/[&<>"']/g, char => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]));
 const btn = (label, action, value = '', primary = false) => `<button type="button" class="exp-button ${primary ? 'exp-primary' : ''}" data-action="${action}" data-value="${escape(value)}">${label}</button>`;
@@ -54,7 +54,7 @@ export function experienceLab() {
           <div><p class="eyebrow">Consumer Growth Console</p><h3 id="exp-console-title">消费者经营后台</h3></div>${status('模拟经营数据')}
         </header>
         <div data-exp-console></div>
-        <footer class="exp-console-footer"><a href="#growth-lab">进入商业验证实验室</a></footer>
+        <footer class="exp-console-footer"><a href="#growth-console">查看当前家庭的联动演示</a><a href="#growth-lab">进入商业验证实验室</a></footer>
       </aside>
     </div>
   </div>`;

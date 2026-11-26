@@ -1,7 +1,7 @@
 import {
   HOUSEHOLDS, FEEDBACK_OPTIONS, EVENT_TYPES, PLAN_LABELS, LIFECYCLE_LABELS, RELATIONSHIP_LABELS,
   dispatchConsumer, getConsumerState, subscribeConsumer, resetConsumer, estimateWindow, decideNextAction,
-} from './consumer-engine.js?v=5';
+} from './consumer-engine.js?v=6';
 
 const numeric = new Intl.NumberFormat('zh-CN', { maximumFractionDigits: 2 });
 const amount = (value) => numeric.format(value);

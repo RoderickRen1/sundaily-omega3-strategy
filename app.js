@@ -2,12 +2,13 @@ import {
   chapters, overview, opportunities, equity, research, benchmarks, family, dimensions, principles,
   privileges, rewards, prototype, systems, migration, passport, ecosystem, mechanisms, flywheels, flywheelTransitions,
   models, organizationLoop, exchanges, stages, priorities, assumptions,
-} from './content.js?v=5';
-import { v2Overview, moduleDirectory, bindV2Overview, v2ModuleLinks } from './strategy-v2.js?v=5';
-import { conversionModules, bindConversionModules } from './growth-conversion.js?v=5';
-import { rhythmModules, bindRhythmModules } from './growth-rhythm.js?v=5';
-import { experienceLab, bindExperienceLab } from './experience-lab.js?v=5';
-import { growthLab, bindGrowthLab } from './growth-lab.js?v=5';
+} from './content.js?v=6';
+import { v2Overview, moduleDirectory, bindV2Overview, v2ModuleLinks } from './strategy-v2.js?v=6';
+import { conversionModules, bindConversionModules } from './growth-conversion.js?v=6';
+import { rhythmModules, bindRhythmModules } from './growth-rhythm.js?v=6';
+import { experienceLab, bindExperienceLab } from './experience-lab.js?v=6';
+import { growthLab, bindGrowthLab } from './growth-lab.js?v=6';
+import { growthWorkbenches, bindGrowthWorkbenches } from './growth-workbenches.js?v=6';
 
 const $ = (selector, parent = document) => parent.querySelector(selector);
 const $$ = (selector, parent = document) => [...parent.querySelectorAll(selector)];
@@ -150,7 +151,7 @@ const chapterMarkup = [
   section('growth-strategy', '把战略变成可重复的经营能力。', '用利益降低门槛，用需求建立习惯，用体验巩固忠诚。沿六个模块从一次购买走向长期的家庭补给。', `
     ${moduleDirectory()}${conversionModules()}${rhythmModules()}`, 'v2-growth'),
   section('experience-lab', '体验同一个家庭，<br>如何被持续服务。', '在会员前台做一次选择，同时观察 Growth Console 里的消费者档案、需求与经营动作如何响应。', experienceLab(), 'v2-lab v2-experience'),
-  section('growth-lab', '看见下一步，<br>验证真实增量。', '在模拟经营台选择家庭、调整假设、提交反馈。用同一份状态解释补给窗口与决策，再用比较工具验证商业口径。', `${growthLab()}${businessSimulator}`, 'v2-lab v2-validation'),
+  section('growth-lab', '用经营假设，<br>验证商业价值。', '通过六个工作台测算转化、权益和增量贡献，探索家庭消费节奏、经营规则与消费者研究设计。', `${growthWorkbenches()}<details class="wb-legacy"><summary>展开联动演示与既有模型</summary>${growthLab()}</details>${businessSimulator}`, 'v2-lab v2-validation'),
 ];
 
 $('#chapters').innerHTML = chapterMarkup.join('');
@@ -689,6 +690,9 @@ document.addEventListener('keydown', (event) => {
 function navigateHash({ instant = false, focus = false } = {}) {
   const target = document.getElementById(location.hash.slice(1));
   if (!target?.closest('main')) return;
+  for (let disclosure = target.parentElement?.closest('details'); disclosure; disclosure = disclosure.parentElement?.closest('details')) {
+    disclosure.open = true;
+  }
   const systemHash = target.id.match(/^system-([1-6])$/);
   if (systemHash) renderSystem(Number(systemHash[1]) - 1);
   if (focus) {
@@ -716,6 +720,7 @@ bindConversionModules();
 bindRhythmModules();
 bindExperienceLab();
 bindGrowthLab();
+bindGrowthWorkbenches();
 if (location.hash) requestAnimationFrame(() => navigateHash({ instant: true }));
 
 if ('IntersectionObserver' in window && !reducedMotion.matches) {

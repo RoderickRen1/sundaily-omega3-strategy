@@ -80,6 +80,16 @@ export function initializeSandbox(state, id) {
 
 /** @typedef {[string, string, string, string, string?]} SandboxDecision */
 export function evaluateSandbox(state, home, window) {
+  function offer(title, reason, stop) {
+    const barrier = home.barrier;
+    const price = barrier === 'price' || barrier === 'both';
+    const channel = barrier === 'channel' || barrier === 'both';
+    if (price) reason += state.sandbox?.marketing === false
+      ? ' 展示规格与实际价格，保留营销静默。'
+      : ' 先说明规格和价格，再判断是否有适用权益。';
+    if (channel) reason += ' 提供消费者熟悉的购买渠道。';
+    return /** @type {SandboxDecision} */ (['execute', title, reason, stop, 'outbound']);
+  }
   /** @type {Array<[string, () => SandboxDecision|null]>} */
   const rules = [
     ['必要售后与主动服务', () => home.serviceOpen || home.serviceCase?.status === 'open'
@@ -97,16 +107,20 @@ export function evaluateSandbox(state, home, window) {
       ? ['delay', '结束本次提醒', home.feedback.value === 'stock' ? '家庭仍有库存，已更新估计。' : '消费者未响应，停止连续提醒。', '新反馈或延后日期。'] : null],
     ['其他渠道购买', () => home.feedback?.value === 'bought' && home.snoozeUntil > state.day
       ? ['delay', '停止本次补货询问', '已记录外部购买自述。', '新需求信号或新的估计窗口。'] : null],
-    ['明确存在需求', () => home.feedback?.value === 'needed' && home.feedback.day === state.day
-      ? ['execute', '提供便捷复购', '消费者已确认有补货需求。', '生成模拟订单、撤回需求或出现售后。', 'outbound'] : null],
+    ['明确的需求反馈', () => {
+      if (home.needDeclined) return ['silent', '尊重当前不补货的选择', '消费者已明确表示暂不需要。', '收到主动请求或新的需求反馈。'];
+      if (home.feedback?.value !== 'needed' || home.feedback.day !== state.day) return null;
+      const title = ['visitor','member'].includes(state.lifecycle) ? '协助选择适合的购买规格' : '提供便捷复购';
+      return offer(title, '消费者已确认有补货需求。', '生成模拟订单、撤回需求或出现售后。');
+    }],
     ['周期计划确认', () => {
       if (!['flex','care'].includes(home.plan) || home.scheduleMode === 'on-demand' || home.nextConfirm == null) return null;
       return state.day >= home.nextConfirm
-        ? ['execute', '邀请确认本期补给', '已到计划确认日。', '确认购买、延期、跳过、暂停或取消。', 'outbound']
+        ? offer('邀请确认本期补给', '已到计划确认日。', '确认购买、延期、跳过、暂停或取消。')
         : ['delay', '等待本期确认日', `计划将于第 ${home.nextConfirm} 天重新确认。`, '到达确认日或消费者主动反馈需求。'];
     }],
     ['估计补货窗口', () => window.start != null && state.day >= window.start && state.day <= window.end
-      ? ['execute', '轻量补货询问', '家庭接近估计需求窗口。', '收到反馈、撤回授权或窗口结束。', 'outbound'] : null],
+      ? offer('轻量补货询问', '家庭接近估计需求窗口。', '收到反馈、撤回授权或窗口结束。') : null],
     ['需求信息充足性', () => window.start == null
       ? ['silent', '等待主动反馈', '当前库存未知。', '收到有效库存或履约记录。']
       : ['delay', '等待新的需求窗口', state.day < window.start ? '距离估计需求还有时间。' : '需求窗口已过去，等待主动确认。', '窗口变化或收到主动反馈。']],
