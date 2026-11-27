@@ -1,8 +1,8 @@
 import {
   HOUSEHOLDS, LIFECYCLE_LABELS, PLAN_LABELS, subscribeConsumer, dispatchConsumer,
   estimateWindow, decideNextAction, resetConsumer, getConsumerState,
-} from './consumer-engine.js?v=7';
-import { SCENARIOS, SPECS, benefitEntries } from './sandbox-state.js?v=7';
+} from './consumer-engine.js?v=8';
+import { SCENARIOS, SPECS, benefitEntries } from './sandbox-state.js?v=8';
 
 const escape = value => String(value ?? '').replace(/[&<>"']/g, char => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]));
 const btn = (label, action, value = '', primary = false) => `<button type="button" class="exp-button ${primary ? 'exp-primary' : ''}" data-action="${action}" data-value="${escape(value)}">${label}</button>`;
@@ -115,7 +115,7 @@ function rhythmView(state, home, window, ui) {
 
 function orderView(state, home) {
   const orders = state.sandbox.orders.filter(order=>order.home===home.id);
-  return `${title('Demo orders','模拟订单', home.name)}${orders.length ? orders.map(order => `<div class="exp-content-card"><h5>${escape(order.id)} · ${escape(order.product)}</h5><p>${order.quantity} 枚 · ${({paid:'已模拟支付 · 待履约',fulfilled:'已模拟履约',cancelled:'已取消 · 模拟退款'})[order.status]}</p>
+  return `${title('Demo orders','模拟订单', home.name)}${orders.length ? orders.map(order => `<div class="exp-content-card"><h5>${escape(order.id)} · ${escape(order.product)}</h5><p>${order.product.includes('蛋卡') ? '可兑换 ' : ''}${order.quantity} 枚 · ${({paid:'已模拟支付 · 待履约',fulfilled:'已模拟履约',cancelled:'已取消 · 模拟退款'})[order.status]}</p>
     ${order.status==='paid' ? '<div class="exp-actions">'+btn('完成模拟履约','fulfill-demo',order.id,true)+btn('取消待履约模拟订单','sandbox-order-cancel',order.id)+'</div>' : ''}</div>`).join('') : '<p>该家庭暂无模拟订单。</p>'}${jump('返回首页','home')}`;
 }
 
@@ -183,7 +183,7 @@ function consoleView(state, home, window, decision, ui) {
     ['会员身份',lab.registered?'DEMO-01':'未注册访客',lab.registered?'真实模拟事件':'规则推断'],
     ['来源渠道',lab.source,'真实模拟事件'],
     ['消费阶段',LIFECYCLE_LABELS[state.lifecycle],'规则推断'],
-    ['订单次数',lab.orders.length,'真实模拟事件'],
+    ['订单记录（含取消）',lab.orders.length,'真实模拟事件'],
     ['已知商品规格',home.lastProduct??'未知',home.lastProduct?'真实模拟事件':'未知'],
     ['家庭消耗习惯',`${home.people} 人 · ${home.rate} 枚/日`,home.habitsSource],
     ['预计库存',window.remaining==null?'未知':window.remaining+' 枚',window.remaining==null?'未知':'模型估计'],

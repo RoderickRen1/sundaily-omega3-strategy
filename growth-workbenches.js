@@ -1,8 +1,8 @@
 import {
   conversionFunnel, existingBuyerPath, acquisitionEconomics, rhythmForecast,
   calibrateRhythm, compareExperiment, incrementalEconomics,
-} from './growth-models.js?v=7';
-import { evaluateSandbox, forecastSandbox } from './sandbox-state.js?v=7';
+} from './growth-models.js?v=8';
+import { evaluateSandbox, forecastSandbox } from './sandbox-state.js?v=8';
 
 const numeric = new Intl.NumberFormat('zh-CN', { maximumFractionDigits: 2 });
 const fmt = value => numeric.format(Math.abs(value) < .005 ? 0 : value);

@@ -200,8 +200,9 @@ export function runSandboxAction(state, home, action, payload, log) {
       order.status = 'fulfilled';
       order.fulfilledDay = state.day;
       home.pendingOrder = false;
-      record('order_fulfilled_demo', '模拟履约完成，按收货数量建立库存基线。', '真实模拟事件', order.id);
-      if (order.product.includes('蛋卡')) record('gift_issued_demo', '样例蛋卡已交付，家庭库存等待实际商品兑换。', '真实模拟事件', order.id);
+      const gift = order.product.includes('蛋卡');
+      record('order_fulfilled_demo', gift ? '模拟蛋卡交付完成。' : '模拟商品履约完成，按收货数量建立库存基线。', '真实模拟事件', order.id);
+      if (gift) record('gift_issued_demo', '样例蛋卡已交付，家庭库存等待实际商品兑换。', '真实模拟事件', order.id);
       else purchase(order);
       return true;
     }

@@ -1,4 +1,4 @@
-import { subscribeConsumer, dispatchConsumer, estimateWindow, decideNextAction, PLAN_LABELS, LIFECYCLE_LABELS, RELATIONSHIP_LABELS } from './consumer-engine.js?v=7';
+import { subscribeConsumer, dispatchConsumer, estimateWindow, decideNextAction, PLAN_LABELS, LIFECYCLE_LABELS, RELATIONSHIP_LABELS } from './consumer-engine.js?v=8';
 
 const periods = [
   ['家庭消耗周期', '鸡蛋从进入家庭库存到被食用的速度。记录这个家庭吃得多快。', [0, 7, 10], '模拟消耗窗口 7–10 天'],

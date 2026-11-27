@@ -1,4 +1,4 @@
-import { initializeSandbox, forecastSandbox, evaluateSandbox, runSandboxAction, benefitEntries } from './sandbox-state.js?v=7';
+import { initializeSandbox, forecastSandbox, evaluateSandbox, runSandboxAction, benefitEntries } from './sandbox-state.js?v=8';
 
 export const HOUSEHOLDS = [
   { id: 'mine', label: '我的家' },

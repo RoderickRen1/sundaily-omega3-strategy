@@ -90,3 +90,16 @@ test('an open service case wins after opt-out and must be resolved explicitly', 
   assert.equal(resolved.homes.mine.serviceCase.status, 'resolved');
   assert.equal(decideNextAction(resolved).outcome, 'silent');
 });
+
+test('a gift card fulfills as a card without verifying egg consumption or restocking', () => {
+  const baseline = start('scan');
+  const ordered = apply('order-demo', {product:'Omega-3 蛋卡礼赠', quantity:20});
+  const order = ordered.sandbox.orders[0];
+  assert.match(order.product, /蛋卡/);
+  const fulfilled = apply('fulfill-demo', {value:order.id});
+  assert.equal(fulfilled.sandbox.orders[0].status, 'fulfilled');
+  assert.equal(fulfilled.verifiedPurchases, baseline.verifiedPurchases);
+  assert.equal(fulfilled.homes.mine.stock, null);
+  assert.match(fulfilled.events.find(event => event.label === 'order_fulfilled_demo').detail, /蛋卡/);
+  assert.doesNotMatch(fulfilled.events.find(event => event.label === 'order_fulfilled_demo').detail, /库存基线/);
+});
