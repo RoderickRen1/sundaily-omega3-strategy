@@ -9,6 +9,9 @@
   --bronze: #b47b52;
   --line: #ddd5c9;
   --focus: #995625;
+  --lab-tint: #f5ede2;
+  --lab-glass: #fffcf6b8;
+  --lab-input: #fcf9f2;
   --gutter: clamp(1.25rem, 5vw, 5rem);
   --nav-height: 4.375rem;
   --sans: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", "PingFang SC", "Noto Sans SC", "Microsoft YaHei", sans-serif;
@@ -112,6 +115,7 @@ p, dd { overflow-wrap: break-word; }
 h1 { margin: 1.5rem 0 1rem; font-size: clamp(3.65rem, 7.6vw, 7.5rem); }
 h1 em { color: #825637; font-weight: inherit; font-style: normal; }
 .hero-english { margin-top: .95rem; margin-bottom: 1.6rem; font: italic clamp(1.4rem, 2.65vw, 2.55rem)/1.2 var(--serif); color: #6f5642; }
+.hero-prototype { margin-bottom: .36rem; color: var(--accent); font-size: .82rem; font-weight: 650; letter-spacing: .032em; }
 .hero-deck { max-width: 32rem; text-wrap: pretty; color: var(--muted); font-size: clamp(1rem, 1.3vw, 1.17rem); }
 .hero-actions { display: flex; flex-wrap: wrap; gap: .75rem; margin-top: 1.7rem; }
 .hero-actions .button:not(.button-primary) { background: transparent; }

@@ -12,12 +12,14 @@ V2.0 在原有的会员战略与组织设计之上，加入消费者转化、动
 
 - `content.js` 维护 V1.0 战略与行业案例证据说明。
 - `strategy-v2.js`、`growth-conversion.js`、`growth-rhythm.js` 维护 V2.0 双引擎与六个深化模块。
-- `consumer-engine.js` 维护两个实验室共享的会话内模拟状态及决策规则，刷新重置。用户没有账号、支付和真实订单接入。
-- `experience-lab.js` 与 `growth-lab.js` 分别承接前台产品体验和商业验证。
+- `consumer-engine.js` 维护产品前台与联动后台的会话内状态。两者使用 `sandbox-state.js` 的统一经营规则。
+- `experience-lab.js` 承接产品体验，`growth-lab.js` 保留联动演示，`growth-workbenches.js` 与 `growth-models.js` 维护六个商业验证工作台及公式。
 - 正式影片交付后，在 `strategy-v2.js` 的 `launch-film` 元素上设置 `data-film-src`。影片加载成功时显示原生控件。
 
 ## 产品体验沙盒
 
 在产品体验实验室切换六个场景。切换桌面模式或移动端视角会继续使用当前共享状态，切换场景或重置会重新初始化。订单、履约、权益、家庭、授权、时间和事件仅在当前页面模拟。
 
-`sandbox-state.js` 集中维护情景数据、交易和计划状态、权益与下一步决策。两个实验室均通过 `consumer-engine.js` 读写当前模拟。
+`sandbox-state.js` 集中维护情景数据、交易和计划状态、权益与下一步决策。商业验证工作台独立管理人口参数、实验样本及决策场景。经营规则工作台直接复用产品体验的规则函数。
+
+运行 `node --test tests/*.test.mjs` 验证经营模型及沙盒状态。

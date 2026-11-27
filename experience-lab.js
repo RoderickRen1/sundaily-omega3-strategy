@@ -1,8 +1,8 @@
 import {
   HOUSEHOLDS, LIFECYCLE_LABELS, PLAN_LABELS, subscribeConsumer, dispatchConsumer,
   estimateWindow, decideNextAction, resetConsumer, getConsumerState,
-} from './consumer-engine.js?v=6';
-import { SCENARIOS, SPECS, benefitEntries } from './sandbox-state.js?v=6';
+} from './consumer-engine.js?v=7';
+import { SCENARIOS, SPECS, benefitEntries } from './sandbox-state.js?v=7';
 
 const escape = value => String(value ?? '').replace(/[&<>"']/g, char => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]));
 const btn = (label, action, value = '', primary = false) => `<button type="button" class="exp-button ${primary ? 'exp-primary' : ''}" data-action="${action}" data-value="${escape(value)}">${label}</button>`;
@@ -27,7 +27,7 @@ export function experienceLab() {
       <label>实验场景<select id="exp-scenario">${SCENARIOS.map(([id, label], index)=>`<option value="${id}">0${index+1} · ${label}</option>`).join('')}</select></label>
       <div class="exp-sandbox-time"><strong id="exp-clock"></strong><div class="exp-actions">${btn('+1 天','advance',1)}${btn('+3 天','advance',3)}${btn('重置实验','reset')}${btn('汇报演示','present')}</div></div>
     </div>
-    <div class="exp-sandbox-intro"><p id="exp-scene-description"></p><p class="note">模拟经营数据 · 所有动作仅在本页推演。</p></div>
+    <div class="exp-sandbox-intro"><p id="exp-scene-description"></p><p class="note">战略原型 · 虚拟账户、订单、权益和触达均在本页模拟。</p></div>
     <div class="exp-mode-strip">
       <div class="exp-desktop-modes" role="group" aria-label="桌面体验模式">
         ${[['consumer','Consumer · 消费者'],['operator','Operator · 双屏'],['intelligence','Intelligence · 决策']].map(([value,label])=>btn(label,'mode',value)).join('')}
@@ -63,10 +63,9 @@ export function experienceLab() {
 function homeView(state, home, window) {
   const lab = state.sandbox;
   const decision = decideNextAction(state);
-  const pending = lab.orders.some(order=>order.home===home.id&&order.status==='paid');
   let card;
   if (home.serviceOpen) card = ['售后服务处理中', '查看问题和处理进度。', jump('处理售后','service',true)];
-  else if (pending) card = ['模拟订单待履约', '可以查看状态或确认样例到货。', jump('查看模拟订单','orders',true)];
+  else if (home.pendingOrder) card = ['模拟订单待履约', '可以查看状态或确认样例到货。', jump('查看模拟订单','orders',true)];
   else if (home.plan === 'paused') card = ['当前补给已暂停', '可以随时主动恢复。', jump('管理补给计划','rhythm',true)];
   else if (lab.id === 'exception') card = ['观察经营异常', '尝试拒绝提醒、报告库存、保留在途订单，或发起商品服务。', jump('反馈需求','rhythm',true)+jump('管理授权','account')+jump('报告商品问题','service')];
   else if (lab.id === 'scan' && !lab.registered) card = ['来自商品包装', '先查看商品品质或会员价值。', jump('查看商品信息','discovery',true)+jump('查看会员价值','moments')];
@@ -116,8 +115,8 @@ function rhythmView(state, home, window, ui) {
 
 function orderView(state, home) {
   const orders = state.sandbox.orders.filter(order=>order.home===home.id);
-  return `${title('Demo orders','模拟订单', home.name)}${orders.length ? orders.map(order => `<div class="exp-content-card"><h5>${escape(order.id)} · ${escape(order.product)}</h5><p>${order.quantity} 枚 · ${order.status==='paid' ? '已模拟支付 · 待履约':'已模拟履约'}</p>
-    ${order.status==='paid' ? btn('完成模拟履约','fulfill-demo',order.id,true) : ''}</div>`).join('') : '<p>该家庭暂无模拟订单。</p>'}${jump('返回首页','home')}`;
+  return `${title('Demo orders','模拟订单', home.name)}${orders.length ? orders.map(order => `<div class="exp-content-card"><h5>${escape(order.id)} · ${escape(order.product)}</h5><p>${order.quantity} 枚 · ${({paid:'已模拟支付 · 待履约',fulfilled:'已模拟履约',cancelled:'已取消 · 模拟退款'})[order.status]}</p>
+    ${order.status==='paid' ? '<div class="exp-actions">'+btn('完成模拟履约','fulfill-demo',order.id,true)+btn('取消待履约模拟订单','sandbox-order-cancel',order.id)+'</div>' : ''}</div>`).join('') : '<p>该家庭暂无模拟订单。</p>'}${jump('返回首页','home')}`;
 }
 
 function phoneView(state, home, window, ui) {
@@ -153,8 +152,9 @@ function phoneView(state, home, window, ui) {
         ${lab.verifiedReceipt?'':btn('无效样例凭证','verify-demo','fail')+btn('有效样例凭证','verify-demo','pass',true)}${jump('查看权益状态','moments')}</div>`;
     case 'buy':
       return `${title('Shop','选择购买规格',home.name)}
-        ${form('checkout',select('虚拟商品','product',productOptions(),ui.orderMode==='repeat'?home.lastProduct??home.product:home.product)+number('购买数量（枚）','quantity',ui.orderMode==='cycle'?home.quantity:ui.orderMode==='repeat'?home.lastQuantity??'':'',1,60,1,false)+'<p class="note">留空使用所选商品的示例规格数量。</p>','预览模拟结算')}`;
+        ${form('checkout',select('虚拟商品','product',productOptions(ui.orderMode!=='cycle'),ui.orderMode==='repeat'?home.lastProduct??home.product:home.product)+number('购买数量（枚）','quantity',ui.orderMode==='cycle'?home.quantity:ui.orderMode==='repeat'?home.lastQuantity??'':'',1,60,1,false)+'<p class="note">留空使用所选商品的示例规格数量。</p>','预览模拟结算')}`;
     case 'checkout':
+      if (ui.order?.home !== home.id) return `${title('Order review','模拟结算已关闭',home.name)}<p>请在当前家庭重新选择商品。</p>${btn('重新选择规格','buy','single',true)}`;
       return `${title('Order review','确认模拟购买',home.name)}<div class="exp-content-card"><h5>${escape(ui.order.product)}</h5><p>${ui.order.quantity} 枚 · ${home.address} · ${home.delivery}</p><p>确认后仅生成模拟支付和订单记录，费用为零。</p>${home.pendingOrder?jump('先处理在途订单','orders'):btn('确认模拟订单','confirm-order','',true)}</div>`;
     case 'orders': return orderView(state,home);
     default: return '';
@@ -178,7 +178,7 @@ function lineChart(home, window, day) {
 
 function consoleView(state, home, window, decision, ui) {
   const lab = state.sandbox;
-  const last = state.events[0];
+  const last = state.events.find(event => event.home === home.id);
   const passport = [
     ['会员身份',lab.registered?'DEMO-01':'未注册访客',lab.registered?'真实模拟事件':'规则推断'],
     ['来源渠道',lab.source,'真实模拟事件'],
@@ -189,7 +189,7 @@ function consoleView(state, home, window, decision, ui) {
     ['预计库存',window.remaining==null?'未知':window.remaining+' 枚',window.remaining==null?'未知':'模型估计'],
     ['库存基线来源',home.stockSource,home.stockSource],
     ['补货服务授权',state.permission && home.authorization?'已授权':'未授权','消费者自述'],
-    ['营销许可',lab.marketing?'已许可':'已撤回','消费者自述'],
+    ['营销许可',lab.marketing?'已许可':'未授权','消费者自述'],
     ['周期计划状态',PLAN_LABELS[home.plan],'消费者自述'],
     ['服务状态',home.serviceOpen?'售后处理中':home.pendingOrder?'订单待履约':'暂无在办问题','真实模拟事件'],
   ];
@@ -253,6 +253,7 @@ export function bindExperienceLab(root = document) {
     const decision = decideNextAction(state);
     const active = document.activeElement;
     const refocus = phone.contains(active) && active.matches('button[data-action]') ? [active.dataset.action,active.dataset.value] : null;
+    const permission = phone.contains(active) ? active.dataset.permission : null;
     const consoleRefocus = console.contains(active) && active.matches('button[data-action]') ? active.dataset.action : null;
     const changingPage = lastPage !== ui.page;
     phone.innerHTML = `${history.length ? btn('返回','back') : ''}${phoneView(state,home,window,ui)}`;
@@ -267,7 +268,12 @@ export function bindExperienceLab(root = document) {
       heading?.setAttribute('tabindex','-1');
       heading?.focus({preventScroll:true});
     } else if (refocus) {
-      [...phone.querySelectorAll('button[data-action]')].find(button=>button.dataset.action===refocus[0]&&button.dataset.value===refocus[1])?.focus({preventScroll:true});
+      const same = [...phone.querySelectorAll('button[data-action]')].find(button=>button.dataset.action===refocus[0]&&button.dataset.value===refocus[1]);
+      const fallback = phone.querySelector('h4');
+      if (!same) fallback?.setAttribute('tabindex','-1');
+      (same ?? fallback)?.focus({preventScroll:true});
+    } else if (permission) {
+      phone.querySelector(`[data-permission="${permission}"]`)?.focus({preventScroll:true});
     }
     if (consoleRefocus) [...console.querySelectorAll('button[data-action]')].find(button=>button.dataset.action===consoleRefocus)?.focus({preventScroll:true});
     box.querySelectorAll('.exp-bottom-nav button').forEach(button=>button.setAttribute('aria-pressed',String(button.dataset.value===ui.page)));
@@ -317,12 +323,13 @@ export function bindExperienceLab(root = document) {
     }
     if (action === 'buy') { ui.orderMode=value; return go('buy'); }
     if (action === 'confirm-order') {
-      if (!ui.order) return;
+      if (ui.order?.home !== state.activeHome) return;
       const order = ui.order;
       ui.order = null;
-      go('orders', true);
       const after = dispatchConsumer('order-demo',order);
-      if (after.sandbox.orders.length > state.sandbox.orders.length) notice.textContent = '模拟订单已生成，等待模拟履约。';
+      go('orders', true);
+      notice.textContent = after.sandbox.orders.length > state.sandbox.orders.length
+        ? '模拟订单已生成，等待模拟履约。' : '计划或订单状态已变化，请查看当前家庭的记录。';
       return;
     }
     const after = dispatchConsumer(action,{value});
@@ -341,15 +348,22 @@ export function bindExperienceLab(root = document) {
     event.preventDefault();
     const fields = Object.fromEntries(new FormData(event.target));
     if (type==='checkout') {
-      ui.order = {...fields,quantity:Number(fields.quantity) || SPECS.find(([product])=>product===fields.product)[1],cycle:ui.orderMode==='cycle'};
+      ui.order = {...fields,home:getConsumerState().activeHome,quantity:Number(fields.quantity) || SPECS.find(([product])=>product===fields.product)[1],cycle:ui.orderMode==='cycle'};
       return go('checkout');
     }
     if (type==='sandbox-plan') fields.cadence=fields.preset==='custom'?fields.custom:fields.preset;
+    const previousEdit = ui.edit;
     ui.edit = '';
     const action = type.startsWith('feedback-') ? 'sandbox-feedback' : type;
     if (action==='sandbox-feedback') fields.value = type.slice(9);
-    dispatchConsumer(action,fields);
-    notice.textContent = '模拟设置已提交。';
+    const before = getConsumerState().sandbox.eventSerial;
+    const after = dispatchConsumer(action,fields);
+    if (after.sandbox.eventSerial === before) {
+      ui.edit = previousEdit;
+      notice.textContent = '没有新增记录。请核对输入或当前状态。';
+    } else {
+      notice.textContent = '模拟设置已提交。';
+    }
   });
   dispatchConsumer('sandbox-start',{id:'scan'});
   subscribeConsumer(render);

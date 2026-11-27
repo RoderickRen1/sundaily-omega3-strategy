@@ -1,8 +1,8 @@
 import {
   conversionFunnel, existingBuyerPath, acquisitionEconomics, rhythmForecast,
   calibrateRhythm, compareExperiment, incrementalEconomics,
-} from './growth-models.js?v=6';
-import { evaluateSandbox, forecastSandbox } from './sandbox-state.js?v=6';
+} from './growth-models.js?v=7';
+import { evaluateSandbox, forecastSandbox } from './sandbox-state.js?v=7';
 
 const numeric = new Intl.NumberFormat('zh-CN', { maximumFractionDigits: 2 });
 const fmt = value => numeric.format(Math.abs(value) < .005 ? 0 : value);
@@ -11,7 +11,7 @@ const pct = value => show(value == null ? null : value * 100, '%');
 const pp = value => show(value == null ? null : value * 100, ' 个百分点');
 const signed = (value, unit = '') => (value > .005 ? '+' : '') + show(value, unit);
 const number = (name, label, value, max = 100, step = 1, min = 0, optional = false) =>
-  `<label class="gl-field">${label}<input type="number" name="${name}" min="${min}" max="${max}" step="${step}" value="${value}" ${optional ? '' : 'required'}></label>`;
+  `<label class="gl-field">${label}<input type="number" name="${name}" min="${min}" max="${max}" step="${step}" inputmode="${step === 1 ? 'numeric' : 'decimal'}" value="${value}" ${optional ? '' : 'required'}></label>`;
 const choose = (name, label, choices, initial = choices[0][0]) =>
   `<label class="gl-field">${label}<select name="${name}">${choices.map(([key, text]) => `<option value="${key}" ${key === initial ? 'selected' : ''}>${text}</option>`).join('')}</select></label>`;
 const reset = text => `<button class="button button-small" type="reset">${text ?? '恢复演示参数'}</button>`;
@@ -40,6 +40,7 @@ function section(index, question, body, notes) {
 
 const stageLabels = ['利益感知', '入会', '首购', '二购', '周期购采用'];
 const cohortWindows = [7,14,30,60];
+const cohortPercent = new Intl.NumberFormat('zh-CN', { style:'percent', maximumFractionDigits:1 });
 const dimensions = {
   channel: ['获客渠道', ['包装扫码','内容电商','线下导购']],
   sku: ['首购商品规格', ['轻享装','日常装','家庭装']],
@@ -260,10 +261,10 @@ function cohortView({dimension, segment}) {
     ['10/05–10/11', 28], ['10/19–10/25', 14], ['10/26–11/01', 7], ['11/02–11/08', 0]];
   const cohorts = followUp.map(([period, observed], i) => {
     const sample = 220 + offset * 9 + i * 24;
-    return [`${period} · 随访 ${observed} 天`, show(sample,' 人'), ...cohortWindows.map((window, j) => {
+    return [`<span class="wb-cohort-period">${period}</span><small>随访 ${observed} 天</small>`, show(sample,' 人'), ...cohortWindows.map((window, j) => {
       if (observed < window) return '<span class="wb-immature" aria-label="未满观察窗">—</span>';
       const rate = Math.round(sample * ([11,21,32,43][j] + offset + (i % 3) * 2) / 100) / sample;
-      return `<span class="wb-heat" style="--wb-heat:${rate.toFixed(3)}">${pct(rate)}</span>`;
+      return `<span class="wb-heat" style="--wb-heat:${rate.toFixed(3)}">${cohortPercent.format(rate)}</span>`;
     })];
   });
   return `<p class="wb-note"><strong>模拟样本</strong> · ${dimensionLabel} / ${groups[Number(segment)]}。模拟截点为 11 月 8 日，随访天数按首购周末计算，每行以同期群为分母。</p>

@@ -1,4 +1,4 @@
-import { initializeSandbox, forecastSandbox, evaluateSandbox, runSandboxAction, benefitEntries } from './sandbox-state.js?v=6';
+import { initializeSandbox, forecastSandbox, evaluateSandbox, runSandboxAction, benefitEntries } from './sandbox-state.js?v=7';
 
 export const HOUSEHOLDS = [
   { id: 'mine', label: '我的家' },
@@ -36,7 +36,7 @@ export const EVENT_TYPES = [
   { id: 'plan-adjust', label: '计划调整', category: '消费者自述', meaning: '按家庭的真实生活变化调整商品、估计节奏及配送偏好。' },
   { id: 'pause', label: '计划暂停', category: '消费者自述', meaning: '停止该家庭主动补给提醒，等待消费者主动恢复。' },
   { id: 'cancel', label: '计划取消', category: '消费者自述', meaning: '终止该家庭补给计划与主动补给提醒。' },
-  { id: 'refund', label: '退款', category: '业务记录', meaning: '撤销待履约状态，开放必要的退款服务处理。' },
+  { id: 'refund', label: '退款', category: '业务记录', meaning: '取消该家庭一笔待履约模拟订单，并更新模拟订单流水。' },
   { id: 'aftersales', label: '售后', category: '业务记录', meaning: '登记或完成必要售后，服务承接优先于经营触达。' },
   { id: 'quality-explore', label: '品质探索', category: '业务记录', meaning: '记录模拟的品质内容访问，用于理解内容兴趣。' },
   { id: 'lab-feedback', label: '共创反馈', category: '消费者自述', meaning: '记录消费者主动选择的概念反馈，用于模拟研究积累。' },
@@ -76,6 +76,7 @@ let store = initialState();
 let sandboxRun = 0;
 
 function bounded(value, low, high) {
+  if (value == null || value === '') return null;
   const number = Number(value);
   return Number.isFinite(number) ? Math.max(low, Math.min(number, high)) : null;
 }
@@ -348,7 +349,7 @@ export function dispatchConsumer(type, payload = {}) {
       const event = payload.type;
       const eventActions = {register:'register-demo','purchase-verified':'verify-demo',payment:'order-demo',fulfill:'fulfill-demo',
         permission:'sandbox-permission',feedback:'sandbox-feedback','plan-create':'sandbox-plan','plan-adjust':'sandbox-plan',pause:'sandbox-plan-step',
-        cancel:'sandbox-plan-step',aftersales:'sandbox-service'};
+        cancel:'sandbox-plan-step',refund:'sandbox-order-cancel',aftersales:'sandbox-service'};
       action = eventActions[event] ?? type;
       if (event === 'purchase-verified') data = {...payload,value:'pass'};
       if (event === 'fulfill') data = {...payload,value:store.sandbox.orders.find(order=>order.home===home.id&&order.status==='paid')?.id};
@@ -400,7 +401,11 @@ export function dispatchConsumer(type, payload = {}) {
       for (const key of ['request', 'pendingOrder', 'serviceOpen']) {
         if (typeof payload[key] === 'boolean') home[key] = payload[key];
       }
-      if (payload.serviceOpen === false) home.serviceUrgent = false;
+      if (store.sandbox) {
+        if (store.sandbox.orders.some(order => order.home === home.id && order.status === 'paid')) home.pendingOrder = true;
+        if (home.serviceCase?.status === 'open') home.serviceOpen = true;
+      }
+      if (!home.serviceOpen) home.serviceUrgent = false;
       if (typeof payload.permission === 'boolean') store.permission = payload.permission;
       if (payload.frequencyDays !== undefined) store.frequencyDays = bounded(payload.frequencyDays, 0, 30) ?? store.frequencyDays;
       if (payload.lastContact !== undefined) store.lastContact = payload.lastContact === null ? null : bounded(payload.lastContact, 0, store.day);

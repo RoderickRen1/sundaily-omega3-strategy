@@ -1,4 +1,4 @@
-import { subscribeConsumer, dispatchConsumer, estimateWindow, decideNextAction, PLAN_LABELS, LIFECYCLE_LABELS, RELATIONSHIP_LABELS } from './consumer-engine.js?v=6';
+import { subscribeConsumer, dispatchConsumer, estimateWindow, decideNextAction, PLAN_LABELS, LIFECYCLE_LABELS, RELATIONSHIP_LABELS } from './consumer-engine.js?v=7';
 
 const periods = [
   ['家庭消耗周期', '鸡蛋从进入家庭库存到被食用的速度。记录这个家庭吃得多快。', [0, 7, 10], '模拟消耗窗口 7–10 天'],
@@ -53,7 +53,7 @@ const events = [
   ['履约', '完成交付后更新库存与周期校准证据。'], ['补货授权', '记录范围、暂停或撤回的许可。'],
   ['需求反馈', '用消费者当前表达更新窗口或提醒偏好。'], ['计划创建', '记录独立家庭、商品和节奏。'],
   ['计划调整', '只调整指定家庭的后续补给。'], ['暂停', '冻结当前家庭的主动计划动作。'],
-  ['取消', '结束相应计划，保留已有模拟记录。'], ['退款', '撤销有效消费贡献并检查服务状态。'],
+  ['取消', '结束相应计划，保留已有模拟记录。'], ['退款', '模拟取消待履约订单，保留事件流水。该订单不计入有效消费或库存。'],
   ['售后', '优先进入服务和关系修复，结束后再评估经营。'],
 ];
 
@@ -89,8 +89,8 @@ export function rhythmModules() {
         <figure class="v2-curve" aria-labelledby="rhythm-curve-caption">
           <figcaption id="rhythm-curve-caption">模拟家庭库存随时间变化</figcaption>
           <svg viewBox="0 0 360 170" role="img" aria-labelledby="rhythm-curve-title"><title id="rhythm-curve-title">家庭库存曲线</title>
-            <g class="v2-curve-grid"><path d="M37 20H341 M37 57H341 M37 94H341 M37 131H341 M37 20V131"/></g>
-            <g class="v2-curve-labels"><text x="4" y="25">12 枚</text><text x="8" y="80">6 枚</text><text x="11" y="134">0</text><text x="34" y="157">第 0 天</text><text x="309" y="157">第 20 天</text></g>
+            <g class="v2-curve-grid"><path d="M37 20H341 M37 75.5H341 M37 131H341 M37 20V131"/></g>
+            <g class="v2-curve-labels"><text x="4" y="25">12 枚</text><text x="8" y="80">6 枚</text><text x="11" y="134">0</text><text x="34" y="157">第 0 天</text><text x="341" y="157" text-anchor="end">第 20 天</text></g>
             <path id="rhythm-curve-line"/><g id="rhythm-curve-points"></g>
           </svg>
           <p id="rhythm-profile-description" role="status"></p>
@@ -103,7 +103,7 @@ export function rhythmModules() {
       </div>
       <div class="v2-block" id="rhythm-feedback">
         <h4>反馈学习闭环</h4><ol class="v2-inline-steps"><li>订单与家庭习惯</li><li>需求预测</li><li>服务触发</li><li>消费者反馈</li><li>周期修正</li><li>资产更新</li></ol>
-        <p class="note">向当前模拟家庭提交一次反馈。产品实验室与商业验证实验室会同步反映变化。</p>${evidence('产品概念演示 · 模拟经营数据')}
+        <p class="note">向当前模拟家庭提交一次反馈。产品沙盒与联动后台会同步反映变化。商业验证工作台使用独立参数。</p>${evidence('产品概念演示 · 模拟经营数据')}
         <div class="v2-feedback-panel">
           <p><strong id="rhythm-feedback-home"></strong><span id="rhythm-feedback-window"></span></p>
           <div class="v2-feedback-buttons" role="group" aria-label="家庭需求反馈">${feedbacks.map(([value, label]) => `<button type="button" class="button button-small" data-rhythm-feedback="${value}">${label}</button>`).join('')}</div>
@@ -135,7 +135,7 @@ export function rhythmModules() {
         <div><h4>五阶段智能经营闭环</h4>${options('智能经营闭环', loop.map(([key, label]) => `${key} ${label}`))}</div>
         <div class="v2-service-preview" id="v2-intelligence-step" aria-live="polite"></div>
       </div>
-      <div class="v2-block"><h4>动态消费者状态</h4><p class="note">同一个模拟消费者的六维状态随两个实验室的操作更新。来源口径随字段展示。</p>
+      <div class="v2-block"><h4>动态消费者状态</h4><p class="note">六维状态来自产品沙盒与联动后台共用的家庭样例。商业验证工作台的人群参数独立。</p>
         <div id="v2-consumer-dimensions" class="v2-state-grid">
         ${[
           ['lifecycle', 'Lifecycle · 消费阶段', '模拟业务记录'], ['demand','Demand · 需求状态','模型估计'],
@@ -145,9 +145,9 @@ export function rhythmModules() {
         </div>
       </div>
       <div class="v2-block v2-split">
-        <div><h4>Next Best Action 决策顺序</h4>
+        <div><h4>Next Best Action 经营原则</h4>
           <ol class="v2-rule-list">${rules.map(([name, detail]) => `<li><strong>${name}</strong><p>${detail}</p></li>`).join('')}</ol></div>
-        <div><h4>当前决策</h4><p id="v2-current-decision" class="selection-note" aria-live="polite"></p>
+        <div><h4>当前决策</h4><p id="v2-current-decision" class="selection-note" aria-live="polite"></p><a class="v2-text-link" href="#lab-decision">查看逐条规则与停止条件</a>
           <h4 class="v2-follow-title">关键经营指标</h4><p>获取、激活、首购、二购、周期经营与单客价值。包装访问、核验首购与交易贡献分口径查看。</p>
           <h4 class="v2-follow-title">商业验证</h4><p>用同期群、A/B 对照实验、增量贡献及单客经济验证经营假设。</p><a class="button button-primary" href="#growth-lab">探索商业价值</a></div>
       </div>

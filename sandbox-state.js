@@ -37,8 +37,8 @@ export function forecastSandbox(home, day) {
   }
   const remaining = Math.max(0, home.stock - home.rate * Math.max(0, day - home.stockDay));
   const empty = home.stockDay + Math.ceil(home.stock / home.rate);
-  const start = Math.max(home.stockDay, empty - 2, home.snoozeUntil ?? 0);
-  return { start, end: Math.max(start, empty), remaining: Math.round(remaining * 10) / 10,
+  const start = Math.max(home.stockDay, empty - 2);
+  return { start, end: empty, remaining: Math.round(remaining * 10) / 10,
     confidence: '模型估计', reason: '以家庭库存和日耗估算耗尽时间，预留 2 天补货提前量。' };
 }
 
@@ -56,7 +56,7 @@ export function initializeSandbox(state, id) {
   state.lifecycle = verified > 1 ? 'repeat' : verified ? 'first' : 'visitor';
   state.relationship = verified ? 'familiar' : 'new';
   state.sandbox = {
-    id, registered: verified > 0, registrations: 0, marketing: true, redeemed: [], notes: [], orders: [],
+    id, registered: verified > 0, registrations: 0, marketing: verified > 0, redeemed: [], notes: [], orders: [],
     adopted: [], createdPlans: 0, eventSerial: 0, nextOrder: 1, verifiedReceipt: false,
     source: id === 'scan' ? '商品包装扫码' : id === 'content' ? '家庭早餐内容' : '模拟存量会员',
   };
@@ -103,8 +103,15 @@ export function evaluateSandbox(state, home, window) {
       ? ['silent', '停止计划提醒', '当前计划已暂停或取消。', '消费者主动恢复或创建计划后重算。'] : null],
     ['触达频控', () => state.lastContact != null && state.day - state.lastContact < Math.max(1, state.frequencyDays)
       ? ['delay', '等待频控', '近期已有触达。', '频控结束后再次检查需求。'] : null],
-    ['库存充足或忽略', () => ['stock', 'ignored'].includes(home.feedback?.value) && home.snoozeUntil > state.day
-      ? ['delay', '结束本次提醒', home.feedback.value === 'stock' ? '家庭仍有库存，已更新估计。' : '消费者未响应，停止连续提醒。', '新反馈或延后日期。'] : null],
+    ['库存充足或忽略', () => {
+      if (home.feedback?.value === 'ignored' && (home.snoozeUntil > state.day || window.start == null || window.start <= home.feedback.day)) {
+        return ['delay', '结束本次提醒', '消费者未响应，停止对同一个需求窗口连续提醒。', '收到新反馈、更新库存基线或进入新的需求窗口。'];
+      }
+      if (home.feedback?.value === 'stock' && home.snoozeUntil > state.day) {
+        return ['delay', '结束本次提醒', '家庭反馈仍有库存，已记录库存反馈。', '收到新反馈或到达延后日期。'];
+      }
+      return null;
+    }],
     ['其他渠道购买', () => home.feedback?.value === 'bought' && home.snoozeUntil > state.day
       ? ['delay', '停止本次补货询问', '已记录外部购买自述。', '新需求信号或新的估计窗口。'] : null],
     ['明确的需求反馈', () => {
@@ -174,8 +181,11 @@ export function runSandboxAction(state, home, action, payload, log) {
       purchase(linked);
       return true;
     case 'order-demo': {
+      if (payload.cycle && (!['flex','care'].includes(home.plan) || (home.scheduleMode !== 'on-demand' &&
+          (home.nextConfirm == null || state.day < home.nextConfirm)))) return false;
       if (home.pendingOrder || lab.orders.some(order => order.home === home.id && order.status === 'paid')) return false;
       const spec = SPECS.find(([name]) => name === payload.product) ?? SPECS[1];
+      if (payload.cycle && spec[0].includes('蛋卡')) return false;
       const id = 'DEMO-' + String(lab.nextOrder++).padStart(3, '0');
       const order = { id, home: home.id, product: spec[0], quantity: number(payload.quantity, 1, 60, spec[1]), status: 'paid', day: state.day, delivery: home.delivery };
       lab.orders.unshift(order);
@@ -193,6 +203,14 @@ export function runSandboxAction(state, home, action, payload, log) {
       record('order_fulfilled_demo', '模拟履约完成，按收货数量建立库存基线。', '真实模拟事件', order.id);
       if (order.product.includes('蛋卡')) record('gift_issued_demo', '样例蛋卡已交付，家庭库存等待实际商品兑换。', '真实模拟事件', order.id);
       else purchase(order);
+      return true;
+    }
+    case 'sandbox-order-cancel': {
+      const order = lab.orders.find(record => record.home === home.id && record.status === 'paid' && (!value || record.id === value));
+      if (!order) return false;
+      order.status = 'cancelled';
+      home.pendingOrder = false;
+      record('order_refunded_demo', '待履约模拟订单已取消。模拟退款不计成交、履约或库存。', '真实模拟事件', order.id);
       return true;
     }
     case 'redeem-demo':
@@ -224,7 +242,9 @@ export function runSandboxAction(state, home, action, payload, log) {
       if (value === 'stock' || value === 'bought') {
         const previous = forecastSandbox(home, state.day).remaining;
         const reported = number(payload.stock, 0, 120, null);
-        home.stock = value === 'bought' ? reported == null ? null : Math.min(120, (previous ?? 0) + reported) : reported ?? previous;
+        home.stock = value === 'bought'
+          ? reported == null || previous == null ? null : Math.min(120, previous + reported)
+          : reported ?? (previous > 0 ? previous : null);
         home.stockSource = home.stock == null ? '未知' : value === 'bought' || reported == null ? '模型估计' : '消费者自述';
         home.stockDay = state.day;
       }
@@ -257,7 +277,9 @@ export function runSandboxAction(state, home, action, payload, log) {
       if (!fresh && cadence === home.cadence && product === home.product && quantity === home.quantity && scheduleMode === home.scheduleMode && payload.delivery === home.delivery) return false;
       const delivery = ['每期确认时选择','工作日晚间','周末白天'].includes(payload.delivery) ? payload.delivery : home.delivery;
       const plan = home.id === 'mine' ? 'flex' : 'care';
-      Object.assign(home, { cadence, product, quantity, scheduleMode, delivery, nextConfirm: scheduleMode === 'on-demand' ? null : state.day + cadence,
+      const timingChanged = fresh || cadence !== home.cadence || scheduleMode !== home.scheduleMode;
+      const nextConfirm = timingChanged ? state.day + cadence : home.nextConfirm;
+      Object.assign(home, { cadence, product, quantity, scheduleMode, delivery, nextConfirm: scheduleMode === 'on-demand' ? null : nextConfirm,
         plan: home.plan === 'paused' ? 'paused' : plan, priorPlan: home.plan === 'paused' ? plan : null });
       if (fresh) lab.createdPlans++;
       record(fresh ? 'cycle_plan_created' : 'cycle_plan_changed', '设置已保存，每期购买由消费者确认。', '消费者自述');

@@ -1,9 +1,9 @@
 .experience-lab {
-  --exp-warm: #f8f1e5;
+  --exp-warm: var(--lab-tint);
   --exp-frame: #2e2822;
   --exp-member: #4d3023;
   --exp-rule: #e0d3c5;
-  --exp-screen: #fcf9f2;
+  --exp-screen: var(--lab-input);
   color: var(--ink);
 }
 

@@ -1,7 +1,7 @@
 import {
   HOUSEHOLDS, FEEDBACK_OPTIONS, EVENT_TYPES, PLAN_LABELS, LIFECYCLE_LABELS, RELATIONSHIP_LABELS,
   dispatchConsumer, getConsumerState, subscribeConsumer, resetConsumer, estimateWindow, decideNextAction,
-} from './consumer-engine.js?v=6';
+} from './consumer-engine.js?v=7';
 
 const numeric = new Intl.NumberFormat('zh-CN', { maximumFractionDigits: 2 });
 const amount = (value) => numeric.format(value);
@@ -40,7 +40,7 @@ export function growthLab() {
       <article class="gl-panel gl-forecast">
         <p class="gl-kind">模型估计 · 模拟经营数据</p>
         <h4>动态需求窗口</h4>
-        <p class="gl-description">按当前库存和家庭日耗估算库存变化，再参考最近购买时间与品类采购间隔。收集到真实需求反馈后重新校准。</p>
+        <p class="gl-description">按当前库存和家庭日耗估算补货窗口。品类采购间隔是独立的研究参考。收到主动库存反馈后重新估计。</p>
         <div id="gl-window"></div>
         <form id="gl-forecast-inputs" class="gl-inputs">
           ${knob('stock', '今天报告的库存（枚）', 7, 0, 120, .1)}
@@ -83,7 +83,7 @@ export function growthLab() {
       <form id="gl-event-form" class="gl-event-form">
         <label class="gl-field">选择业务事件<select id="gl-event-choice" name="type">${selectOptions(EVENT_TYPES)}</select></label>
         <button class="button button-small" type="submit">写入模拟事件</button>
-        <p id="gl-event-meaning" class="gl-description"></p>
+        <p id="gl-event-meaning" class="gl-description"></p><p id="gl-event-status" class="gl-description" role="status"></p>
       </form>
       <div class="table-scroll" role="region" aria-label="模拟事件流水" tabindex="0">
         <table class="gl-event-table"><thead><tr><th scope="col">时间 / 家庭</th><th scope="col">事件</th><th scope="col">信息类型</th><th scope="col">业务含义</th></tr></thead>
@@ -162,7 +162,7 @@ function chart(window, home, day) {
     `${x(date)},${y(Math.max(0, window.remaining - home.rate * (date - day)))}`).join(' ');
   const ticks = [day, day + Math.round(horizon / 2), end];
   return `<svg class="gl-chart" viewBox="0 0 600 125" role="img" aria-label="第 ${day} 天起的估计库存曲线。阴影表示第 ${window.start} 至 ${window.end} 天的需求窗口。">
-    <rect class="gl-chart-range" x="${x(window.start)}" y="${top}" width="${Math.max(3, x(window.end) - x(window.start))}" height="${height}"></rect>
+    ${window.end >= day ? `<rect class="gl-chart-range" x="${x(Math.max(day, window.start))}" y="${top}" width="${Math.max(3, x(window.end) - x(Math.max(day, window.start)))}" height="${height}"></rect>` : ''}
     <path class="gl-chart-axis" d="M${left} ${top}v${height}h${width}"></path>
     <polyline class="gl-chart-stock" points="${series}" />
     <circle class="gl-chart-point" cx="${left}" cy="${y(window.remaining)}" r="4"></circle>
@@ -243,6 +243,9 @@ export function bindGrowthLab(root = document) {
       ['Service 服务状态', home.request ? '有主动请求' : home.serviceOpen ? '售后进行中' : home.pendingOrder ? '待履约' : '暂无待处理服务', home.request ? '消费者自述' : '业务记录'],
       ['Permission 触达许可', state.permission && home.authorization ? '账号与家庭均授权' : '主动触达禁止', '消费者自述'],
     ];
+    const activeOrder = state.sandbox?.orders.some(order => order.home === home.id && order.status === 'paid');
+    policyForm.elements.pendingOrder.disabled = Boolean(activeOrder);
+    policyForm.elements.serviceOpen.disabled = home.serviceCase?.status === 'open';
     q('#gl-dimensions').innerHTML = dimensions.map(([label, value, source]) =>
       `<div><dt>${label}</dt><dd>${value}<small>${source}</small></dd></div>`).join('');
     q('#gl-event-log').innerHTML = state.events.map(({ day, label, category, home, detail }) =>
@@ -262,7 +265,7 @@ export function bindGrowthLab(root = document) {
 
   policyForm.addEventListener('change', (event) => {
     const { name, type, checked, valueAsNumber } = event.target;
-    if (name === 'authorization') dispatchConsumer('update-home', { authorization: checked });
+    if (name === 'authorization') dispatchConsumer('event', {type:'permission', granted:checked});
     else if (name === 'relationship') dispatchConsumer('set-policy', { relationship: event.target.value });
     else if (type === 'checkbox') dispatchConsumer('set-policy', { [name]: checked });
     else if (event.target.reportValidity()) dispatchConsumer('set-policy', { [name]: valueAsNumber });
@@ -273,7 +276,10 @@ export function bindGrowthLab(root = document) {
   eventChoice.addEventListener('change', updateEventMeaning);
   eventForm.addEventListener('submit', (event) => {
     event.preventDefault();
-    dispatchConsumer('event', { type: eventChoice.value });
+    const before = getConsumerState().sandbox?.eventSerial;
+    const after = dispatchConsumer('event', { type: eventChoice.value });
+    q('#gl-event-status').textContent = before === after.sandbox?.eventSerial
+      ? '当前家庭没有符合条件的记录，或该动作已经完成。' : '已记录模拟事件。';
   });
 
   const controls = qa('#gl-study-toggle [data-gl-choice]');
@@ -314,7 +320,7 @@ export function bindGrowthLab(root = document) {
       ['对照组转化率', percent(controlRate)], ['实验组转化率', percent(testRate)],
       ['绝对转化率差', describeDelta(delta)],
       ['模拟 95% 区间', `${amount(lower * 100)} 至 ${amount(upper * 100)} 个百分点`],
-    ]) + `<p class="gl-description">${lower <= 0 && upper >= 0 ? '该区间包含零，样例数据仍不足以区分正负效果。' : '该区间位于零的一侧，仍需检查实验条件和业务规模适用性。'}</p>`;
+    ]) + `<p class="gl-description">${lower <= 0 && upper >= 0 ? '按设定的样本数量和独立分组假设计算，模拟区间包含零。' : '按设定的样本数量和独立分组假设计算，模拟区间位于零的一侧。真实效果须以正式对照实验验证。'}</p>`;
 
     if (!growth) {
       q('#gl-increment-output').textContent = '请输入有效的经营参数。';
@@ -325,7 +331,7 @@ export function bindGrowthLab(root = document) {
     const revenue = expectedOrders * growth.basket;
     const contribution = revenue * growth.grossRate / 100;
     q('#gl-increment-output').innerHTML = metrics([
-      ['估计增量转化', `${amount(expectedOrders)} 单`], ['估计增量净收入', `${amount(revenue)} 元`],
+      ['估计增量转化', `${amount(expectedOrders)} 单`], ['估计增量成交金额', `${amount(revenue)} 元`],
       ['估计增量贡献', `${amount(contribution)} 元`], ['扣除独立经营投入', `${amount(contribution - growth.programCost)} 元`],
     ]);
     q('#gl-unit-output').innerHTML = unit ? metrics([

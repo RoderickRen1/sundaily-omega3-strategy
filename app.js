@@ -2,13 +2,13 @@ import {
   chapters, overview, opportunities, equity, research, benchmarks, family, dimensions, principles,
   privileges, rewards, prototype, systems, migration, passport, ecosystem, mechanisms, flywheels, flywheelTransitions,
   models, organizationLoop, exchanges, stages, priorities, assumptions,
-} from './content.js?v=6';
-import { v2Overview, moduleDirectory, bindV2Overview, v2ModuleLinks } from './strategy-v2.js?v=6';
-import { conversionModules, bindConversionModules } from './growth-conversion.js?v=6';
-import { rhythmModules, bindRhythmModules } from './growth-rhythm.js?v=6';
-import { experienceLab, bindExperienceLab } from './experience-lab.js?v=6';
-import { growthLab, bindGrowthLab } from './growth-lab.js?v=6';
-import { growthWorkbenches, bindGrowthWorkbenches } from './growth-workbenches.js?v=6';
+} from './content.js?v=7';
+import { v2Overview, moduleDirectory, bindV2Overview, v2ModuleLinks } from './strategy-v2.js?v=7';
+import { conversionModules, bindConversionModules } from './growth-conversion.js?v=7';
+import { rhythmModules, bindRhythmModules } from './growth-rhythm.js?v=7';
+import { experienceLab, bindExperienceLab } from './experience-lab.js?v=7';
+import { growthLab, bindGrowthLab } from './growth-lab.js?v=7';
+import { growthWorkbenches, bindGrowthWorkbenches } from './growth-workbenches.js?v=7';
 
 const $ = (selector, parent = document) => parent.querySelector(selector);
 const $$ = (selector, parent = document) => [...parent.querySelectorAll(selector)];
