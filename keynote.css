@@ -1,0 +1,26 @@
+#launch-film-section { align-items: center; }
+#launch-film-section .v2-film-cover { max-height: 13rem; }
+.keynote-player { grid-column: 1 / -1; }
+#launch-film { display: block; aspect-ratio: 16 / 9; max-height: none; border-radius: .65rem; width: 100%; background: #211b16; }
+.keynote-chapters { display: grid; grid-template-columns: repeat(4,minmax(0,1fr)); gap: .45rem; margin-top: .7rem; }
+.keynote-chapters button { min-height: 2.8rem; padding: .45rem .6rem; text-align: left; justify-content: start; }
+.keynote-chapters time { margin-right: .25rem; color: var(--accent); font-variant-numeric: tabular-nums; }
+.keynote-guide-entry { grid-column: 1 / -1; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: .7rem 1.4rem; padding: 1.15rem 0; border-top: 1px solid var(--line); scroll-margin-top: var(--nav-height); }
+.keynote-actions { display: flex; flex-wrap: wrap; gap: .5rem; }
+.keynote-ended .keynote-guide-entry { border-top-color: var(--bronze); background: var(--lab-tint); padding-inline: .7rem; }
+.guide-coach { position: fixed; inset: auto max(1rem,env(safe-area-inset-right)) max(1rem,env(safe-area-inset-bottom)) auto; z-index: 95; width: min(27rem,calc(100vw - 2rem)); padding: 1rem; border: 1px solid var(--bronze); border-radius: .8rem; background: var(--paper); color: var(--ink); box-shadow: 0 12px 46px #27180b33; font-size: .89rem; line-height: 1.55; }
+.guide-coach-meta,.guide-coach-actions { display: flex; flex-wrap: wrap; align-items: center; gap: .4rem; }
+.guide-coach-meta { justify-content: space-between; color: var(--accent); font-weight: 680; }
+.guide-coach h2 { font-size: 1.33rem; letter-spacing: -.015em; margin-block: .4rem; }
+.guide-coach-actions { margin-top:.7rem; }
+.guide-coach [data-guide-feedback]:not(:empty) { margin-top: .5rem; color: var(--accent); font-weight: 650; }
+.guide-spotlight { outline: 3px solid #ad592a !important; outline-offset: 3px; scroll-margin-block: 4rem; }
+.guide-coach [data-guide-reset] { border-color: var(--accent); }
+.guide-coach:has([data-guide-reset].guide-spotlight) { outline: none; }
+.wb-guide { white-space: nowrap; width: fit-content; margin: 0 0 .85rem; }
+@media (max-width: 700px) {
+  .keynote-chapters { grid-template-columns: repeat(2,minmax(0,1fr)); }
+  .guide-coach { inset-inline: .55rem; inset-block-end: .55rem; width: auto; padding: .7rem; }
+  .guide-coach .button-small { padding-inline:.55rem; }
+  .guide-coach h2 { font-size: 1.15rem; }
+}

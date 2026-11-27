@@ -3,12 +3,14 @@ import {
   privileges, rewards, prototype, systems, migration, passport, ecosystem, mechanisms, flywheels, flywheelTransitions,
   models, organizationLoop, exchanges, stages, priorities, assumptions,
 } from './content.js?v=8';
-import { v2Overview, moduleDirectory, bindV2Overview, v2ModuleLinks } from './strategy-v2.js?v=8';
+import { v2Overview, moduleDirectory, bindV2Overview, v2ModuleLinks } from './strategy-v2.js?v=9';
 import { conversionModules, bindConversionModules } from './growth-conversion.js?v=8';
 import { rhythmModules, bindRhythmModules } from './growth-rhythm.js?v=8';
 import { experienceLab, bindExperienceLab } from './experience-lab.js?v=8';
 import { growthLab, bindGrowthLab } from './growth-lab.js?v=8';
-import { growthWorkbenches, bindGrowthWorkbenches } from './growth-workbenches.js?v=8';
+import { growthWorkbenches, bindGrowthWorkbenches } from './growth-workbenches.js?v=9';
+
+import { bindGuidedExperience } from './guided-experience.js?v=1';
 
 const $ = (selector, parent = document) => parent.querySelector(selector);
 const $$ = (selector, parent = document) => [...parent.querySelectorAll(selector)];
@@ -721,6 +723,7 @@ bindRhythmModules();
 bindExperienceLab();
 bindGrowthLab();
 bindGrowthWorkbenches();
+bindGuidedExperience();
 if (location.hash) requestAnimationFrame(() => navigateHash({ instant: true }));
 
 if ('IntersectionObserver' in window && !reducedMotion.matches) {

@@ -1,3 +1,5 @@
+import { guideEntry } from './guided-experience.js?v=1';
+
 const engines = [
   {
     id: 'conversion',
@@ -26,11 +28,29 @@ export const v2ModuleLinks = [
   ['consumer-intelligence', '数据触发与验证'],
 ];
 
+const filmChapters = [
+  [0,'00:00','从战略到产品'],
+  [30,'00:30','产品体验操作'],
+  [70,'01:10','商业验证操作'],
+  [105,'01:45','战略收口'],
+];
+
 function filmContainer() {
   return `<section class="v2-film" id="launch-film-section" aria-labelledby="v2-film-title">
-    <div class="v2-film-cover"><img src="./assets/hero-egg.jpg" alt="" loading="lazy" width="1280" height="1280"></div>
-    <div class="v2-film-description"><p class="eyebrow">One-Take · 30 秒</p><h3 id="v2-film-title">产品发布影片</h3><p id="launch-film-status" role="status">正式影片待接入。</p></div>
-    <video id="launch-film" controls playsinline preload="none" poster="./assets/hero-egg.jpg" data-film-src="" aria-labelledby="v2-film-title" hidden></video>
+    <div class="v2-film-cover"><img src="./assets/keynote/cover.jpg" alt="" loading="lazy" width="1280" height="720"></div>
+    <div class="v2-film-description"><p class="eyebrow">One-Take · 02:00</p><h3 id="v2-film-title">从战略构想到消费者智能经营</h3><p>管理层产品发布与操作教学 · 中文旁白与字幕</p></div>
+    <div class="keynote-player">
+      <video id="launch-film" controls playsinline preload="none" poster="./assets/keynote/cover.jpg"
+        src="./assets/keynote/sundaily-keynote-1080p.mp4" aria-labelledby="v2-film-title">
+        <track kind="captions" srclang="zh-CN" label="简体中文" src="./assets/keynote/subtitles.zh.vtt" default>
+      </video>
+      <p id="launch-film-status" role="status" hidden>影片暂未加载。可重试播放或先进入引导体验。</p>
+      <nav class="keynote-chapters" aria-label="影片章节">${filmChapters.map(([seconds, stamp, label])=>
+        `<button class="button button-small" type="button" data-keynote-time="${seconds}"><time>${stamp}</time> ${label}</button>`).join('')}</nav>
+      <p class="note keynote-credit">普通话合成配音采用 Piper Chaowen。Hi-Fi TTS 数据集（Cori Samuel，读者 92）按
+        <a href="https://www.openslr.org/109/" target="_blank" rel="noopener">CC BY 4.0</a> 署名。</p>
+    </div>
+    ${guideEntry()}
   </section>`;
 }
 
@@ -75,22 +95,37 @@ export function bindV2Overview(root = document) {
   choose(engines[0].id);
 
   const video = root.querySelector('#launch-film');
-  const source = video.dataset.filmSrc.trim();
-  if (source) {
-    const status = root.querySelector('#launch-film-status');
-    const filmLink = root.querySelector('#hero-film-link');
-    video.addEventListener('loadedmetadata', () => {
-      video.hidden = false;
-      status.hidden = true;
-      filmLink.textContent = '30 秒发布影片';
-    });
-    video.addEventListener('error', () => {
-      video.hidden = true;
-      status.hidden = false;
-      status.textContent = '影片暂未加载，请稍后重试。';
-      filmLink.textContent = '30 秒发布影片 · 暂未加载';
-    });
-    video.preload = 'metadata';
-    video.src = source;
+  const status = root.querySelector('#launch-film-status');
+  const sectionFilm = root.querySelector('#launch-film-section');
+  const replay = root.querySelector('#keynote-replay');
+  let chapterTime=null;
+  video.addEventListener('loadedmetadata',()=>{
+    if(chapterTime!==null){video.currentTime=chapterTime;chapterTime=null;}
+  });
+  function seek(time) {
+    if(video.readyState===0){
+      chapterTime=time;
+      if(video.preload==='none'||video.error){
+        video.preload='metadata';
+        video.load();
+      }
+    }else{
+      video.currentTime=time;
+    }
+    video.scrollIntoView({block:'center'});
+    video.focus({preventScroll:true});
   }
+  sectionFilm.querySelectorAll('[data-keynote-time]').forEach(button => button.addEventListener('click', () => seek(Number(button.dataset.keynoteTime))));
+  video.addEventListener('error',()=>{status.hidden=false;});
+  video.addEventListener('loadeddata',()=>{status.hidden=true;});
+  video.addEventListener('ended',()=>{
+    sectionFilm.classList.add('keynote-ended');
+    replay.hidden=false;
+    sectionFilm.querySelector('[data-guide-start]').focus({preventScroll:true});
+  });
+  replay.addEventListener('click',()=>{
+    sectionFilm.classList.remove('keynote-ended');
+    seek(0);
+    video.play().catch(()=>{status.hidden=false;});
+  });
 }

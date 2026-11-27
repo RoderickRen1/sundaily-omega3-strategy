@@ -34,6 +34,7 @@ function section(index, question, body, notes) {
   const [id, english, title] = labs[index];
   return `<section class="wb-section" id="${id}" aria-labelledby="${id}-title">
     <header class="wb-heading"><div><p class="eyebrow">LAB 0${index + 1} · ${english}</p><h3 id="${id}-title">${title}</h3></div><p>${question}</p></header>
+    <button class="button button-small wb-guide" type="button" data-guide-lab="${id.slice(4)}">工作台操作引导</button>
     ${body}${notes ? `<p class="wb-note">${notes}</p>` : ''}
     <a class="wb-return" href="#lab-directory">返回工作台目录 ↑</a></section>`;
 }

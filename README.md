@@ -14,7 +14,8 @@ V2.0 在原有的会员战略与组织设计之上，加入消费者转化、动
 - `strategy-v2.js`、`growth-conversion.js`、`growth-rhythm.js` 维护 V2.0 双引擎与六个深化模块。
 - `consumer-engine.js` 维护产品前台与联动后台的会话内状态。两者使用 `sandbox-state.js` 的统一经营规则。
 - `experience-lab.js` 承接产品体验，`growth-lab.js` 保留联动演示，`growth-workbenches.js` 与 `growth-models.js` 维护六个商业验证工作台及公式。
-- 正式影片交付后，在 `strategy-v2.js` 的 `launch-film` 元素上设置 `data-film-src`。影片加载成功时显示原生控件。
+- 发布影片、封面和中文字幕位于 `assets/keynote/`，播放与章节定位由 `strategy-v2.js` 管理。
+- `guided-experience.js` 实现全程新手引导与六个独立工作台引导，以实际页面事件和经营状态确认操作。
 
 ## 产品体验沙盒
 
