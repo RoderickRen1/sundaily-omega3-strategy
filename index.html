@@ -1,18 +1,17 @@
 <!doctype html>
-<html lang="zh-CN">
+<html lang="zh-CN" data-page="top">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="theme-color" content="#fbfaf7">
-  <meta name="description" content="圣迪乐 Omega-3 消费者智能经营系统 V2.0。战略展示及交互原型，包含家庭补给和商业验证实验室。">
-  <meta property="og:title" content="圣迪乐 V2.0 · 会员战略与产品原型">
-  <meta property="og:description" content="理解每一次购买，探索家庭补给。站内产品体验及经营参数均为模拟。">
+  <meta name="theme-color" content="#211b16">
+  <meta name="description" content="圣迪乐消费者经营战略平台。探索会员战略体系、转化与周期购深化及交互实验室。">
+  <meta property="og:title" content="首页 · SUNDaily Membership">
   <meta property="og:type" content="website">
   <meta property="og:url" content="https://roderickren1.github.io/sundaily-omega3-strategy/">
   <meta property="og:image" content="https://roderickren1.github.io/sundaily-omega3-strategy/assets/hero-egg.jpg">
   <link rel="canonical" href="https://roderickren1.github.io/sundaily-omega3-strategy/">
-  <title>圣迪乐 Omega-3｜消费者智能经营系统 V2.0</title>
-  <link rel="icon" href="./assets/mark.svg" type="image/svg+xml">
+  <title>圣迪乐消费者经营战略平台 | SUNDaily Membership</title>
+  <link rel="icon" href="./assets/mark.svg">
   <link rel="stylesheet" href="./style.css?v=8">
   <link rel="stylesheet" href="./strategy-v2.css?v=8">
   <link rel="stylesheet" href="./growth-conversion.css?v=8">
@@ -20,60 +19,30 @@
   <link rel="stylesheet" href="./growth-lab.css?v=8">
   <link rel="stylesheet" href="./growth-workbenches.css?v=8">
   <link rel="stylesheet" href="./keynote.css?v=1">
-  <script type="module" src="./app.js?v=9"></script>
+  <link rel="stylesheet" href="./platform.css?v=1">
+  <script type="module" src="./app.js?v=10"></script>
 </head>
 <body>
-  <a class="skip" href="#overview">跳至战略总览</a>
+  <a class="skip" href="#main">跳至主内容</a>
   <header class="site-header">
     <div class="nav-shell">
-      <a class="brand" href="#top"><img src="./assets/mark.svg" width="33" height="33" alt=""><span><strong>圣迪乐 <small>OMEGA-3</small></strong><span>消费者智能经营系统</span></span></a>
-      <nav class="desktop-nav" aria-label="战略章节" id="nav"></nav>
-      <div class="nav-actions"><button id="present" class="button button-small">汇报模式</button><button id="menu-button" class="button button-small menu-button" aria-expanded="false" aria-controls="mobile-nav">目录</button></div>
+      <a class="brand" href="./"><img src="./assets/mark.svg" width="33" height="33" alt=""><strong>SUNDaily</strong></a>
+      <nav class="platform-nav" aria-label="全站导航" id="nav">
+        <a href="./">首页</a><a href="./v1/">V1.0 <span>战略体系</span></a><a href="./v2/">V2.0 <span>经营深化</span></a>
+      </nav>
+      <div class="nav-actions"><button id="present" type="button" class="button button-small">汇报模式</button><button id="menu-button" type="button" class="button button-small" aria-expanded="false" aria-controls="mobile-nav" hidden>章节目录</button></div>
     </div>
-    <nav id="mobile-nav" class="mobile-nav" aria-label="全站章节目录" hidden></nav>
+    <nav id="mobile-nav" class="mobile-nav" aria-label="当前工作空间目录" hidden></nav>
     <div class="progress-track" aria-hidden="true"><div id="reading-progress"></div></div>
   </header>
-  <noscript><p class="wrap">请启用 JavaScript 以阅读完整战略和使用交互图。</p></noscript>
-  <main id="main">
-    <section id="top" class="hero">
-      <div class="wrap hero-grid">
-        <div class="hero-copy">
-          <p class="eyebrow">SUNDaily Consumer Operating System <span>V2.0</span></p>
-          <h1>从理解一次购买，<br><em>到理解一个家庭的<wbr><span class="hero-phrase">生活节奏。</span></em></h1>
-          <p class="hero-english" lang="en">Understand the consumer.<br>
-            Anticipate the need.<br>
-            Care for the family.</p>
-          <p class="hero-prototype">会员战略 · 交互原型</p>
-          <p class="hero-deck">圣迪乐 Omega-3 消费者智能经营系统，以消费者洞察为中枢，通过全域转化、动态需求补货及长期会员经营，建立自主品牌消费者增长能力。</p>
-          <div class="hero-actions"><a href="#strategy-v1" class="button button-primary">探索完整战略</a><a href="#experience-lab" class="button">体验会员原型</a><a href="#growth-lab" class="button">探索商业价值</a></div>
-          <a class="hero-film-link" id="hero-film-link" href="#launch-film-section">观看发布影片 · 02:00</a>
-        </div>
-        <figure class="hero-art" aria-label="蛋形雕塑的轨道连起消费者关系、家庭消费节奏与数据经营网络">
-          <div class="hero-egg" aria-hidden="true"></div>
-          <div class="hero-orbits" aria-hidden="true"><i></i><i></i><i></i></div>
-          <svg class="hero-network" viewBox="0 0 620 570" aria-hidden="true"><path d="M105 330Q245 155 490 230Q446 408 179 448L105 330 M179 448Q420 420 538 338Q412 225 490 230"/><circle cx="105" cy="330" r="3"/><circle cx="490" cy="230" r="3"/><circle cx="538" cy="338" r="3"/><circle cx="179" cy="448" r="3"/></svg>
-          <span class="orbit-label label-consumer"><i></i>消费者关系</span>
-          <span class="orbit-label label-family"><i></i>家庭消费节奏</span>
-          <span class="orbit-label label-community"><i></i>数据经营网络</span>
-          <figcaption>从个体选择，到家庭生活节奏</figcaption>
-        </figure>
-      </div>
-      <div class="wrap hero-note"><span>经营哲学</span><p>不追求消费者每天想起圣迪乐，而追求消费者每次需要鸡蛋的时候，都愿意选择圣迪乐。</p></div>
-    </section>
-    <div id="chapters"></div>
-  </main>
-  <footer class="site-footer"><div class="wrap"><span>圣迪乐 Omega-3 · V2.0 策略展示与交互原型</span><a href="#top">回到开场</a></div></footer>
+  <noscript><p class="wrap">请启用 JavaScript 以使用战略工作空间的交互内容。</p></noscript>
+  <div id="platform" class="platform-layout"><aside id="workspace-nav" hidden></aside><main id="main" tabindex="-1"><div id="chapters"></div></main></div>
+  <footer class="site-footer"><div class="wrap"><span>圣迪乐 Omega-3 · 战略展示与交互原型</span><a href="./">返回首页</a></div></footer>
   <div id="present-controls" class="present-controls" role="group" aria-label="汇报控制" hidden>
-    <div class="present-position">
-      <strong>汇报模式</strong>
-      <select id="slide-jump" aria-label="当前章节与跳转"></select>
-      <output id="slide-label" aria-label="章节进度" aria-live="polite"></output>
-    </div>
+    <div class="present-position"><strong>汇报模式</strong><select id="slide-jump" aria-label="当前章节与跳转"></select><output id="slide-label" aria-label="章节进度" aria-live="polite"></output></div>
     <div class="present-actions">
-      <button type="button" class="button button-small" id="prev-slide">上一章</button>
-      <button type="button" class="button button-small" id="next-slide">下一章</button>
-      <button type="button" class="button button-small" id="fullscreen" aria-pressed="false">全屏</button>
-      <button type="button" class="button button-small" id="exit-present">退出汇报</button>
+      <button type="button" class="button button-small" id="prev-slide">上一章</button><button type="button" class="button button-small" id="next-slide">下一章</button>
+      <button type="button" class="button button-small" id="fullscreen">全屏</button><button type="button" class="button button-small" id="exit-present">退出汇报</button>
     </div>
     <p id="present-shortcuts" class="present-shortcuts">← / → 切换章节 · Esc 退出汇报</p>
     <p id="present-feedback" class="present-feedback" role="status" hidden>无法启用全屏，仍可继续汇报。</p>

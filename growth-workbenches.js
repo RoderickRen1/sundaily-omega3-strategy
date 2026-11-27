@@ -1,3 +1,4 @@
+import { readSession, writeSession, removeSession } from './session.js?v=1';
 import {
   conversionFunnel, existingBuyerPath, acquisitionEconomics, rhythmForecast,
   calibrateRhythm, compareExperiment, incrementalEconomics,
@@ -33,7 +34,7 @@ const labs = [
 function section(index, question, body, notes) {
   const [id, english, title] = labs[index];
   return `<section class="wb-section" id="${id}" aria-labelledby="${id}-title">
-    <header class="wb-heading"><div><p class="eyebrow">LAB 0${index + 1} · ${english}</p><h3 id="${id}-title">${title}</h3></div><p>${question}</p></header>
+    <header class="wb-heading"><div><p class="eyebrow">LAB 0${index + 1} · ${english}</p><h1 id="${id}-title">${title}</h1></div><p>${question}</p></header>
     <button class="button button-small wb-guide" type="button" data-guide-lab="${id.slice(4)}">工作台操作引导</button>
     ${body}${notes ? `<p class="wb-note">${notes}</p>` : ''}
     <a class="wb-return" href="#lab-directory">返回工作台目录 ↑</a></section>`;
@@ -67,24 +68,24 @@ const presets = [
   ['repeat','规律用户确认需求',{lifecycle:'repeat',need:'yes',plan:'running',due:'yes'}],
 ];
 
-export function growthWorkbenches() {
-  return `<div id="growth-workbenches">
-    <p class="wb-disclaimer"><strong>演示假设</strong> 本区使用独立的人群参数和模拟样本。产品体验实验室的单个模拟家庭不会写入这里的人群指标。</p>
+export function growthWorkbenches(selected) {
+  const directory=`
     <nav id="lab-directory" class="wb-index" aria-label="六个商业验证工作台">${labs.map(([id, english, title], index) =>
-      `<a href="#${id}"><small>LAB 0${index + 1}</small><strong>${title}</strong><span>${english}</span></a>`).join('')}</nav>
-    ${section(0, '哪一段流失最多？同样的转化改善，能带来多少二购和周期购采用？',
+      `<a href="#${id}"><small>LAB 0${index + 1}</small><strong>${title}</strong><span>${english}</span></a>`).join('')}</nav>`;
+  const sections=[
+    () => section(0, '哪一段流失最多？同样的转化改善，能带来多少二购和周期购采用？',
       `${inputs('wb-funnel-form', number('reach','潜客触达（人）',10000,1e8) +
         [60,40,35,45,25].map((value, i) => number('rate'+i,stageLabels[i]+'率（%）',value,100,.01)).join(''))}
         ${outputs('wb-funnel-out','条件漏斗与敏感性结果')}
         <h4 class="wb-subtitle">先购买后入会</h4><p class="wb-note">起点为已购买的存量消费者，会员化后才计算该路径的复购与补货服务采用。</p>
         <div class="wb-split">${inputs('wb-buyers-form',number('buyers','已购消费者（人）',2000,1e8)+number('join','已购会员化率（%）',30,100,.01)+number('repeat','入会后复购率（%）',45,100,.01)+number('adopt','复购后补货服务采用率（%）',25,100,.01))}${outputs('wb-buyers-out','存量消费者结果')}</div>`,
-      '两条路径分别计算，起点和条件分母独立。敏感性按单节点最多提高 5 个百分点测算。资源优先级还需要比较改善成本、可行性和增量贡献。')}
-    ${section(1, '为了让新会员完成首次和第二次购买，需要投入多少权益成本？',
+      '两条路径分别计算，起点和条件分母独立。敏感性按单节点最多提高 5 个百分点测算。资源优先级还需要比较改善成本、可行性和增量贡献。'),
+    () => section(1, '为了让新会员完成首次和第二次购买，需要投入多少权益成本？',
       `<div class="wb-split">${inputs('wb-acquisition-form', number('members','新增会员（人）',10000,1e8)+number('welcome','人均入会权益实付成本（元）',2,1e7,.01)+
         number('firstRate','首购转化率（%）',30,100,.01)+number('firstCost','每位实际首购权益成本（元）',5,1e7,.01)+number('repeatRate','二购转化率（%）',40,100,.01)+number('repeatCost','每位实际二购权益成本（元）',3,1e7,.01))}
         ${outputs('wb-acquisition-out','权益投资和分摊结果')}</div>`,
-      '人均入会权益仅分摊入会费用。每位首购或二购分摊额均以三项总权益投入除以该阶段人数。流量、人员及系统等投入另计，完整获客成本需使用更广口径。')}
-    ${section(2, '这一批库存可能何时耗尽？家庭可能什么时候就想补货？',
+      '人均入会权益仅分摊入会费用。每位首购或二购分摊额均以三项总权益投入除以该阶段人数。流量、人员及系统等投入另计，完整获客成本需使用更广口径。'),
+    () => section(2, '这一批库存可能何时耗尽？家庭可能什么时候就想补货？',
       `<div class="wb-split"><form id="wb-rhythm-form" class="wb-form"><div class="wb-fields">
         ${number('purchased','本次购买（枚）',20,10000)}${number('inventory','已有库存（枚）',0,10000)}
         ${number('daily','日均消耗（枚 / 天）',2,100,.01,0,true)}
@@ -97,13 +98,13 @@ export function growthWorkbenches() {
           ${number('additionalQty','额外购买量（枚）','',10000,.1,0,true)}
           ${number('losses','非消耗造成的损耗（枚）',0,10000,.1,0,true)}</div></details>
         <div class="wb-actions">${reset()}</div></form>${outputs('wb-rhythm-out','库存轨迹及反馈校准')}</div>`,
-      '快耗与慢耗构成情景范围，无统计置信度含义。经校准的日耗来自已知库存变化，未知购买或损耗先补齐信息。补货阈值为消费者偏好。本工具用于经营研究，食品保质期及膳食判断需另用适用依据。')}
-    ${section(3, '面对同一个家庭，应该提供服务、延迟还是保持静默？',
+      '快耗与慢耗构成情景范围，无统计置信度含义。经校准的日耗来自已知库存变化，未知购买或损耗先补齐信息。补货阈值为消费者偏好。本工具用于经营研究，食品保质期及膳食判断需另用适用依据。'),
+    () => section(3, '面对同一个家庭，应该提供服务、延迟还是保持静默？',
       `<div class="wb-presets" role="group" aria-label="模拟规则预设">${presets.map(([id, label]) => `<button class="button button-small" type="button" data-wb-preset="${id}" aria-pressed="${id === 'day8'}">${label}</button>`).join('')}</div>
         <div class="wb-split">${inputs('wb-decision-form',decisionFields.map(([name,label,options,initial]) => choose(name,label,options,initial)).join(''))}
         ${outputs('wb-decision-out','决策状态与规则轨迹')}</div>`,
-      '本工作台用与产品体验实验室相同的规则函数推演独立的消费者状态。任何选择均不发送提醒，也不会改变产品沙盒档案。')}
-    ${section(4, '二购改善能在同样成熟度的群组中复现吗？',
+      '本工作台用与产品体验实验室相同的规则函数推演独立的消费者状态。任何选择均不发送提醒，也不会改变产品沙盒档案。'),
+    () => section(4, '二购改善能在同样成熟度的群组中复现吗？',
       `<div class="wb-research" id="growth-research">
         <h4>同期群分析</h4><p class="wb-note">按首购发生时间划分队列。切换条件后查看 7、14、30 和 60 天累计二购率。</p>
         ${inputs('wb-cohort-form', choose('dimension','研究维度', Object.entries(dimensions).map(([id,[label]]) => [id,label]))+
@@ -116,15 +117,18 @@ export function growthWorkbenches() {
           ${outputs('wb-ab-out','A/B 指标直接比较')}</div>
         <p class="wb-note">实验设计采用随机分组、相同观察期和统一指标口径，按初始分组评估结果。家庭成员存在相互影响时可按会员或家庭分组。长期观察累计消费、购买是否提前、库存变化及消费者体验。</p>
       </div>`,
-      '热力图全部为模拟样本。未满随访窗的单元用空值。指标差值为设定情景下的估计，正式实验须另行检验统计与经营意义。')}
-    ${section(5, '二购率至少要提升多少，才能覆盖新增触达、权益和固定运营投入？',
+      '热力图全部为模拟样本。未满随访窗的单元用空值。指标差值为设定情景下的估计，正式实验须另行检验统计与经营意义。'),
+    () => section(5, '二购率至少要提升多少，才能覆盖新增触达、权益和固定运营投入？',
       `<div class="wb-split">${inputs('wb-increment-form', number('targets','目标消费者（人）',10000,1e8)+number('baseline','自然二购率 P0（%）',30,100,.01)+
         number('treated','干预后二购率 P1（%）',38,100,.01)+number('margin','每笔增量二购贡献毛利（元）',15,1e7,.01,-1e7)+number('contact','每位目标消费者触达成本（元）',.3,1e7,.01)+
         number('reward','每位实际二购新增权益成本（元）',1,1e7,.01)+number('fixed','本期固定运营投入（元）',2000,1e10,.01))}
         ${outputs('wb-increment-out','增量贡献与盈亏平衡')}</div>`,
-      '以每位增量二购消费者对应一笔新增订单测算。权益成本覆盖干预组全部实际二购消费者。输入贡献毛利应已扣商品、渠道与履约变动成本，单列权益只扣一次。结果为演示的增量贡献。真实预测与企业会计净利润需引入各自的完整数据。')}
-    ${dataBoundaries()}
-  </div>`;
+      '以每位增量二购消费者对应一笔新增订单测算。权益成本覆盖干预组全部实际二购消费者。输入贡献毛利应已扣商品、渠道与履约变动成本，单列权益只扣一次。结果为演示的增量贡献。真实预测与企业会计净利润需引入各自的完整数据。'),
+  ];
+  const index=labs.findIndex(([id])=>id===selected);
+  return `<div id="growth-workbenches">
+    <p class="wb-disclaimer"><strong>演示假设</strong> 本区使用独立的人群参数和模拟样本。产品体验实验室的单个模拟家庭不会写入这里的人群指标。</p>
+    ${index<0?directory+dataBoundaries():sections[index]()}</div>`;
 }
 
 function dataBoundaries() {
@@ -312,10 +316,22 @@ export function bindGrowthWorkbenches(root = document) {
   for (const [id, render] of Object.entries(renderers)) {
     const form = scope.querySelector('#wb-' + id + '-form');
     const output = scope.querySelector('#wb-' + id + '-out');
+    if(!form||!output)continue;
+    const key = 'workbench-'+id;
+    const saved = readSession(key,{});
     const controls = form.elements;
     const presetsInScope = id === 'decision' ? [...scope.querySelectorAll('[data-wb-preset]')] : [];
-    let context = id === 'decision' ? '首购后第 8 天 · 演示预设' : '';
-    const updatePresets = active => presetsInScope.forEach(button => button.setAttribute('aria-pressed', String(button.dataset.wbPreset === active)));
+    let context = saved.context ?? (id === 'decision' ? '首购后第 8 天 · 演示预设' : '');
+    let preset = saved.preset ?? 'day8';
+    const updatePresets = active => {
+      preset=active;
+      presetsInScope.forEach(button => button.setAttribute('aria-pressed', String(button.dataset.wbPreset === active)));
+    };
+    const persist = () => writeSession(key,{context,preset,values:Object.fromEntries([...controls].filter(control=>control.name).map(control=>[control.name,control.value]))});
+    for(const [name,value] of Object.entries(saved.values ?? {})){
+      if(controls[name]&&name!=='segment')controls[name].value=value;
+    }
+    if(id==='decision')updatePresets(preset);
 
     function update(refillSegments = false) {
       if (id === 'cohort' && refillSegments) {
@@ -341,6 +357,7 @@ export function bindGrowthWorkbenches(root = document) {
         updatePresets('');
       }
       update(event.target.name === 'dimension');
+      persist();
     });
     form.addEventListener('submit', event => event.preventDefault());
     form.addEventListener('reset', () => {
@@ -349,7 +366,10 @@ export function bindGrowthWorkbenches(root = document) {
         context = '首购后第 8 天 · 演示预设';
         updatePresets('day8');
       }
-      queueMicrotask(() => update(true));
+      queueMicrotask(() => {
+        update(true);
+        removeSession(key);
+      });
     });
     for (const button of presetsInScope) {
       button.addEventListener('click', () => {
@@ -358,8 +378,21 @@ export function bindGrowthWorkbenches(root = document) {
         context = title + ' · 演示预设';
         updatePresets(key);
         update();
+        persist();
       });
     }
     update(true);
+    if(id==='cohort'&&saved.values?.segment!=null){
+      controls.segment.value=saved.values.segment;
+      if(!controls.segment.value)controls.segment.value='0';
+      update();
+    }
+  }
+}
+
+export function resetWorkbenchSession(){
+  for(const id of ['funnel','buyers','acquisition','rhythm','decision','cohort','ab','increment']){
+    removeSession('workbench-'+id);
+    document.getElementById('wb-'+id+'-form')?.reset();
   }
 }

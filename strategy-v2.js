@@ -1,4 +1,5 @@
-import { guideEntry } from './guided-experience.js?v=1';
+import { assetURL } from './routes.js?v=1';
+import { guideEntry } from './guided-experience.js?v=2';
 
 const engines = [
   {
@@ -35,14 +36,14 @@ const filmChapters = [
   [105,'01:45','战略收口'],
 ];
 
-function filmContainer() {
+export function filmContainer() {
   return `<section class="v2-film" id="launch-film-section" aria-labelledby="v2-film-title">
-    <div class="v2-film-cover"><img src="./assets/keynote/cover.jpg" alt="" loading="lazy" width="1280" height="720"></div>
+    <div class="v2-film-cover"><img src="${assetURL('keynote/cover.jpg')}" alt="" loading="lazy" width="1280" height="720"></div>
     <div class="v2-film-description"><p class="eyebrow">One-Take · 02:00</p><h3 id="v2-film-title">从战略构想到消费者智能经营</h3><p>管理层产品发布与操作教学 · 中文旁白与字幕</p></div>
     <div class="keynote-player">
-      <video id="launch-film" controls playsinline preload="none" poster="./assets/keynote/cover.jpg"
-        src="./assets/keynote/sundaily-keynote-1080p.mp4" aria-labelledby="v2-film-title">
-        <track kind="captions" srclang="zh-CN" label="简体中文" src="./assets/keynote/subtitles.zh.vtt" default>
+      <video id="launch-film" controls playsinline preload="none" poster="${assetURL('keynote/cover.jpg')}"
+        src="${assetURL('keynote/sundaily-keynote-1080p.mp4')}" aria-labelledby="v2-film-title">
+        <track kind="captions" srclang="zh-CN" label="简体中文" src="${assetURL('keynote/subtitles.zh.vtt')}" default>
       </video>
       <p id="launch-film-status" role="status" hidden>影片暂未加载。可重试播放或先进入引导体验。</p>
       <nav class="keynote-chapters" aria-label="影片章节">${filmChapters.map(([seconds, stamp, label])=>
@@ -55,11 +56,7 @@ function filmContainer() {
 }
 
 export function v2Overview() {
-  return `<div class="v2-evolution" aria-label="从战略到经营能力的演进">
-    <div><p class="eyebrow">V1.0 · Strategy</p><h3>建立战略基础</h3><p>明确品牌会员的定位和价值主张，建立六大体系、增长机制与组织保障。</p><a href="#strategy-v1">阅读完整战略</a></div>
-    <div><p class="eyebrow">V2.0 · Operating System</p><h3>深化关键经营能力</h3><p>理解每一次购买和下一次真实需求，用可体验的产品和可验证的经营模型推进落地。</p><a href="#growth-strategy">进入经营深化</a></div>
-  </div>
-  <section class="v2-engines" id="engines" aria-labelledby="v2-engines-title">
+  return `<section class="v2-engines" id="engines" aria-labelledby="v2-engines-title">
     <header><p class="eyebrow">Operating Architecture</p><h3 id="v2-engines-title">两个引擎，同一个经营中枢。</h3><p>两项能力深化原有六大会员体系，共同服务 Stage 0 的自主品牌会员规模增长，并为周期复购和单客价值积累能力。</p></header>
     <div class="v2-engine-diagram">
       <svg viewBox="0 0 900 170" preserveAspectRatio="none" aria-hidden="true"><path data-engine-wire="conversion" d="M140 42 C140 114 285 135 450 135"/><path data-engine-wire="replenishment" d="M760 42 C760 114 615 135 450 135"/><circle cx="450" cy="135" r="5"/></svg>
@@ -70,7 +67,10 @@ export function v2Overview() {
     <div class="v2-engine-detail" id="v2-engine-detail" aria-live="polite"></div>
     <p class="v2-engine-outcome"><strong>共同目标</strong><span>会员规模增长 · 周期复购 · 单客价值增长</span></p>
   </section>
-  ${filmContainer()}`;
+<div class="v2-evolution" aria-label="从战略到经营能力的演进">
+    <div><p class="eyebrow">V1.0 · Strategy</p><h3>建立战略基础</h3><p>明确品牌会员的定位和价值主张，建立六大体系、增长机制与组织保障。</p><a href="#strategy-v1">阅读完整战略</a></div>
+    <div><p class="eyebrow">V2.0 · Operating System</p><h3>深化关键经营能力</h3><p>理解每一次购买和下一次真实需求，用可体验的产品和可验证的经营模型推进落地。</p><a href="#module-directory-title">查看六个深化模块</a></div>
+  </div>`;
 }
 
 export function moduleDirectory() {
@@ -93,7 +93,9 @@ export function bindV2Overview(root = document) {
   }
   buttons.forEach(button => button.addEventListener('click', () => choose(button.dataset.engine)));
   choose(engines[0].id);
+}
 
+export function bindFilm(root=document){
   const video = root.querySelector('#launch-film');
   const status = root.querySelector('#launch-film-status');
   const sectionFilm = root.querySelector('#launch-film-section');

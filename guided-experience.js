@@ -1,11 +1,13 @@
-import { getConsumerState, subscribeConsumer, resetConsumer } from './consumer-engine.js?v=8';
+import { getConsumerState, subscribeConsumer, dispatchConsumer } from './consumer-engine.js?v=10';
+import { resetWorkbenchSession } from './growth-workbenches.js?v=10';
+import { readSession, writeSession, removeSession } from './session.js?v=1';
+import { routeURL } from './routes.js?v=1';
 
 const exp = '#experience-lab ';
 const phone = '#exp-member-phone ';
 const action = (name, value) => `${exp}[data-action="${name}"][data-value="${value}"]`;
 const go = name => action('page', name);
 const one = selector => document.querySelector(selector);
-const forms = ['funnel','buyers','acquisition','rhythm','decision','cohort','ab','increment'];
 const toWorkbench = {
   funnel:'funnel', acquisition:'acquisition', rhythm:'rhythm', decision:'decision',
   cohort:'cohort', ab:'cohort', increment:'increment',
@@ -36,7 +38,8 @@ const checkpoints = [
   [9,'切换消费者视角',`${exp}[data-action=mode][data-value=consumer],${exp}[data-action=mobile][data-value=consumer]`,'点击消费者视角，从前台查看家庭的计划状态。','已切换到消费者视角。',(_s,e)=>e?.matches('[data-action][data-value=consumer]')],
   [9,'切换经营后台',`${exp}[data-action=mode][data-value=operator],${exp}[data-action=mobile][data-value=operator]`,'点击运营后台，查看档案及事件。','已切换到运营视角。',(_s,e)=>e?.matches('[data-action][data-value=operator]')],
   [9,'查看智能决策',`${exp}[data-action=mode][data-value=intelligence],${exp}[data-action=mobile][data-value=intelligence]`,'点击智能决策，查看规则命中与停止条件。','已打开规则解释。',(_s,e)=>e?.matches('[data-action][data-value=intelligence]')],
-  [10,'进入商业验证实验室','#experience-lab .chapter-next a','点击下一章，探索独立的人群模拟。','已进入商业验证实验室。',(_s,e)=>e?.matches('a[href="#growth-lab"]')],
+  [10,'进入商业验证实验室','#product-to-growth','点击进入商业验证实验室，探索独立的人群模拟。','已进入商业验证实验室。',(_s,e)=>e?.matches('#product-to-growth'),null,'experience-lab','growth-lab'],
+  [10,'选择第一个工作台','#lab-directory a:first-child','从工作台目录选择「转化漏斗」。','已打开转化漏斗。',(_s,e)=>e?.closest('#lab-directory a:first-child'),null,'growth-lab','lab-funnel'],
 ];
 const benchRules = {
   funnel:[['rate3','二购转化率','观察二购人数、周期购人数和敏感性分析。']],
@@ -53,20 +56,24 @@ function benchSteps(id){
     const selector=`#wb-${key}-form [name="${field}"]`;
     const after=(s,e,event,startValue)=>e?.matches(selector) && event==='change' && e.value!==startValue &&
       e.value!=='' && e.validity.valid && !one(`#wb-${key}-out .wb-message`);
-    return [11,'调整'+title,selector,`修改${title}。${detail}`,'参数已改变，已用实际工作台实时重算。',after];
+    return [11,'调整'+title,selector,`修改${title}。${detail}`,'参数已改变，已用实际工作台实时重算。',after,null,'lab-'+toWorkbench[key]];
   }));
 }
 
 export const guideEntry = () => `<div class="keynote-guide-entry" id="guided-experience">
   <div><p class="eyebrow">Guided Experience</p><h4>沿真实界面，完成一次经营推演。</h4></div>
   <div class="keynote-actions"><button type="button" class="button button-primary" data-guide-start>开始引导式体验</button>
-  <a class="button" href="#experience-lab">自由探索</a><button type="button" class="button" id="keynote-replay" hidden>重新观看影片</button></div>
+  <a class="button" href="#experience-lab">进入产品体验实验室</a>
+  <a class="button" href="#growth-lab">进入商业验证实验室</a><a class="button" href="#growth-strategy">返回 V2.0 总览</a><button type="button" class="button" id="keynote-replay" hidden>重新观看影片</button></div>
 </div>`;
 
 const resetStep=[12,'重置参数，进入自由探索','[data-guide-reset]','可一次重置本次引导的家庭样例和商业参数。当前网站会回到包装扫码和各工作台演示值。','已恢复演示数据，可自由探索。',(_s,e)=>e?.matches('[data-guide-reset]')];
 
-export function bindGuidedExperience() {
-  if(!one('#guided-experience'))return;
+export function bindGuidedExperience(pageId) {
+  const startsHere=one('[data-guide-start],[data-guide-lab]');
+  const saved=readSession('guide');
+  const tourPage = ['experience-lab','growth-lab','launch-film-section'].includes(pageId)||pageId.startsWith('lab-');
+  if(!tourPage)return;
   document.body.insertAdjacentHTML('beforeend',`<aside class="guide-coach" aria-label="操作引导" hidden>
     <div class="guide-coach-meta"><span data-guide-progress></span><button class="button button-small" type="button" data-guide-command="exit">退出引导</button></div>
     <h2 data-guide-title></h2><p data-guide-text></p><p data-guide-feedback role="status"></p>
@@ -80,8 +87,16 @@ export function bindGuidedExperience() {
   const next=coach.querySelector('[data-guide-command=next]');
   const reset=coach.querySelector('[data-guide-reset]');
   const locate=coach.querySelector('[data-guide-command=locate]');
-  let sequence=[], index=0, done=false, mark=null, opening=null, initial=null, standalone=false, finishTarget=null;
+  let sequence=[], index=0, done=false, mark=null, opening=null, initial=null, standalone=null;
   const completed=new Set();
+  const fullSequence=()=>[...checkpoints,...['funnel','acquisition','rhythm','decision','cohort','increment'].flatMap(benchSteps),resetStep];
+  const routeFor=step=>step[7]??(step[0]===12?'lab-increment':'experience-lab');
+  const persist=()=>writeSession('guide',{index,standalone,initial,completed:[...completed]});
+  function openStep(){
+    const destination=routeFor(sequence[index]);
+    if(destination!==pageId){persist();location.assign(routeURL(destination));}
+    else draw();
+  }
 
   function target() {
     const selector=sequence[index]?.[2];
@@ -114,6 +129,7 @@ export function bindGuidedExperience() {
     patchTarget(scroll);
     initial=mark?.value;
     if(completed.has(index))complete();
+    persist();
   }
   function complete() {
     if(done||coach.hidden)return;
@@ -121,37 +137,36 @@ export function bindGuidedExperience() {
     completed.add(index);
     next.disabled=false;
     coach.querySelector('[data-guide-feedback]').textContent=sequence[index][4];
+    persist();
   }
   function close(restore=true){
     mark?.classList.remove('guide-spotlight');
     coach.hidden=true;sequence=[];mark=null;
+    removeSession('guide');
     if(restore&&visible(opening)) opening.focus({preventScroll:true});
   }
   function advance(amount,skipped=false){
     if(amount>0 && !done && !skipped)return;
     if(index+amount>=sequence.length){
-      const destination=finishTarget;
+      const lab=standalone;
       close(false);
-      if(destination)one(destination)?.scrollIntoView({block:'start'});
+      if(lab)one('#lab-'+toWorkbench[lab])?.scrollIntoView({block:'start'});
+      else location.assign(routeURL('experience-lab'));
       return;
     }
-    if(index+amount>=0){index+=amount;draw();}
+    if(index+amount>=0){index+=amount;openStep();}
   }
-  function launch(button,id) {
-    opening=button;index=0;standalone=Boolean(id);
+  function launch(button,id){
+    opening=button;index=0;standalone=id||null;
     completed.clear();
-    finishTarget=id?`#lab-${toWorkbench[id]}`:'#experience-lab';
     if(id)sequence=benchSteps(id);
     else{
-      resetConsumer();
-      const scenario=one('#exp-scenario');
-      scenario.value='content';
-      scenario.dispatchEvent(new Event('change',{bubbles:true}));
+      dispatchConsumer('sandbox-start',{id:'content'});
       one(`${exp}.exp-desktop-modes [data-value=operator]`)?.click();
       one(`${exp}.exp-mobile-modes [data-value=consumer]`)?.click();
-      sequence=[...checkpoints,...['funnel','acquisition','rhythm','decision','cohort','increment'].flatMap(benchSteps),resetStep];
+      sequence=fullSequence();
     }
-    draw();
+    openStep();
   }
   function evaluate(event) {
     if(coach.hidden || done)return;
@@ -159,6 +174,13 @@ export function bindGuidedExperience() {
     const expected=sequence[index];
     const anchor=mark;
     if(!anchor || !(anchor===node||anchor.contains(node)||node.matches(expected[2])))return;
+    if(expected[8]&&event.type==='click'&&node.matches('a')&&expected[5](getConsumerState(),node,event.type,initial)){
+      if(event.metaKey||event.ctrlKey||event.shiftKey||event.altKey)return;
+      complete();
+      index++;
+      persist();
+      return;
+    }
     setTimeout(()=>{
       if(coach.hidden||sequence[index]!==expected)return;
       if(expected[5](getConsumerState(),node,event.type,initial)) complete();
@@ -170,9 +192,8 @@ export function bindGuidedExperience() {
     if(!b)return;
     if(b.matches('[data-guide-start],[data-guide-lab]')) return launch(b,b.dataset.guideLab);
     if(b.matches('[data-guide-reset]')) {
-      forms.forEach(id=>one('#wb-'+id+'-form')?.reset());
-      const scenario=one('#exp-scenario');
-      scenario.value='scan';scenario.dispatchEvent(new Event('change',{bubbles:true}));
+      resetWorkbenchSession();
+      dispatchConsumer('sandbox-start',{id:'scan'});
       return complete();
     }
     const command=b.dataset.guideCommand;
@@ -193,4 +214,14 @@ export function bindGuidedExperience() {
   subscribeConsumer(()=>{
     if(!coach.hidden)queueMicrotask(()=>{if(!coach.hidden)patchTarget();});
   });
+  if(saved){
+    standalone=saved.standalone;
+    sequence=standalone?benchSteps(standalone):fullSequence();
+    index=saved.index;
+    if(sequence[index]&&routeFor(sequence[index])===pageId){
+      opening=startsHere;
+      (saved.completed??[]).forEach(step=>completed.add(step));
+      draw();
+    }
+  }
 }

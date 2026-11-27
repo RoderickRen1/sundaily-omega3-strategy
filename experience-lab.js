@@ -1,7 +1,9 @@
+import { assetURL } from './routes.js?v=1';
+import { readSession, writeSession } from './session.js?v=1';
 import {
   HOUSEHOLDS, LIFECYCLE_LABELS, PLAN_LABELS, subscribeConsumer, dispatchConsumer,
   estimateWindow, decideNextAction, resetConsumer, getConsumerState,
-} from './consumer-engine.js?v=8';
+} from './consumer-engine.js?v=10';
 import { SCENARIOS, SPECS, benefitEntries } from './sandbox-state.js?v=8';
 
 const escape = value => String(value ?? '').replace(/[&<>"']/g, char => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]));
@@ -38,7 +40,7 @@ export function experienceLab() {
     <div class="exp-split">
       <article class="exp-phone" id="exp-member-phone" aria-labelledby="exp-phone-title">
         <header class="exp-phone-header">
-          <img src="./assets/mark.svg" alt="" width="35" height="35">
+          <img src="${assetURL('mark.svg')}" alt="" width="35" height="35">
           <div><strong id="exp-phone-title">SUNDaily Membership</strong><span>Your Family. Your Rhythm.</span></div>
           ${jump('账户','account')}
         </header>
@@ -129,7 +131,7 @@ function phoneView(state, home, window, ui) {
         ${lab.registered ? '' : btn('模拟注册','register-demo','',true)}${benefitEntries(state).map(({id,title,rule,status:availability})=>`<div class="exp-content-card"><h5>${title}</h5>${status(availability)}<details><summary>查看使用规则</summary><p>${rule}</p></details>${availability==='可使用'?btn('使用模拟权益','redeem-demo',id):''}</div>`).join('')}${lab.id==='scan'?jump('关联模拟订单','verify'):''}`;
     case 'discovery':
       return `${title('Discovery','品质探索','基础商品信息向所有访客开放。')}
-        <figure class="exp-discovery-hero"><img src="./assets/hero-egg.jpg" alt="本项目蛋形概念主视觉"></figure>
+        <figure class="exp-discovery-hero"><img src="${assetURL('hero-egg.jpg')}" alt="本项目蛋形概念主视觉"></figure>
         <div class="exp-content-card"><h5>Omega-3 家庭早餐商品概念</h5><p>可选日常、轻享及家庭规格。示例图为品牌概念视觉。</p>${btn('查看商品规格','buy','single',true)}</div>
         ${[['nutrition','营养成分信息','营养表、每份用量及计量单位等待正式商品资料。'],['quality','品质证据与溯源','批次来源、检测及认证字段仅示意，待核验文件。'],['brand','品牌体验','了解家庭早餐与品质探索概念。']].map(([id,name,detail])=>`<div class="exp-content-card"><h5>${name}</h5><p>${detail}</p>${btn('记录本次查看','sandbox-discovery',id)}</div>`).join('')}${jump('进入消费者共创','lab')}`;
     case 'lab':
@@ -226,11 +228,15 @@ export function bindExperienceLab(root = document) {
   const console = box.querySelector('[data-exp-console]');
   const notice = box.querySelector('[data-exp-message]');
   const scene = box.querySelector('#exp-scenario');
-  const ui = {page:'home', edit:'', order:null, orderMode:'single', trace:false};
-  const history = [];
+  const saved=readSession('product-view');
+  const current=getConsumerState();
+  const restore=saved?.run===current.sandbox?.run?saved:null;
+  const ui = {page:'home', edit:'', order:null, orderMode:'single', trace:false,...restore?.ui};
+  const history = restore?.history ?? [];
   let lastEvent = '';
-  let lastPage = 'home';
-  let lastRun;
+  let lastPage = ui.page;
+  let lastRun = current.sandbox?.run;
+  const persist=()=>writeSession('product-view',{run:lastRun,ui,history,mode:box.dataset.mode,mobile:box.dataset.mobile});
   function go(page, back = false) {
     if (ui.page !== page && !back) history.push(ui.page);
     ui.page = page;
@@ -287,6 +293,7 @@ export function bindExperienceLab(root = document) {
       box.classList.add('exp-event-arrived');
     }
     lastEvent = signature;
+    persist();
   }
   function setMode(kind, value) {
     box.dataset[kind] = value;
@@ -295,6 +302,7 @@ export function bindExperienceLab(root = document) {
       ui.trace = true;
       console.querySelector('[data-trace]').open = true;
     }
+    persist();
   }
   scene.addEventListener('change', () => {
     clearPhone();
@@ -340,7 +348,10 @@ export function bindExperienceLab(root = document) {
     if (event.target.matches('[name=preset]') && event.target.value!=='custom') event.target.form.elements.custom.value=event.target.value;
   });
   box.addEventListener('toggle', event => {
-    if (event.target.matches('[data-trace]') && event.target.isConnected) ui.trace = event.target.open;
+    if (event.target.matches('[data-trace]') && event.target.isConnected){
+      ui.trace = event.target.open;
+      persist();
+    }
   },true);
   box.addEventListener('submit', event => {
     const type = event.target.dataset.form;
@@ -365,8 +376,7 @@ export function bindExperienceLab(root = document) {
       notice.textContent = '模拟设置已提交。';
     }
   });
-  dispatchConsumer('sandbox-start',{id:'scan'});
   subscribeConsumer(render);
-  setMode('mode','operator');
-  setMode('mobile','consumer');
+  setMode('mode',restore?.mode ?? 'operator');
+  setMode('mobile',restore?.mobile ?? 'consumer');
 }

@@ -1,7 +1,8 @@
+import { readSession, writeSession } from './session.js?v=1';
 import {
   HOUSEHOLDS, FEEDBACK_OPTIONS, EVENT_TYPES, PLAN_LABELS, LIFECYCLE_LABELS, RELATIONSHIP_LABELS,
   dispatchConsumer, getConsumerState, subscribeConsumer, resetConsumer, estimateWindow, decideNextAction,
-} from './consumer-engine.js?v=8';
+} from './consumer-engine.js?v=10';
 
 const numeric = new Intl.NumberFormat('zh-CN', { maximumFractionDigits: 2 });
 const amount = (value) => numeric.format(value);
@@ -282,11 +283,18 @@ export function bindGrowthLab(root = document) {
       ? '当前家庭没有符合条件的记录，或该动作已经完成。' : '已记录模拟事件。';
   });
 
+  const preferences=readSession('legacy-study',{});
   const controls = qa('#gl-study-toggle [data-gl-choice]');
-  controls.forEach((button) => button.addEventListener('click', () => {
-    controls.forEach((item) => item.setAttribute('aria-pressed', String(item === button)));
-    qa('[data-gl-study]').forEach((study) => { study.hidden = study.dataset.glStudy !== button.dataset.glChoice; });
+  function pickStudy(id) {
+    preferences.study=id;
+    controls.forEach(item=>item.setAttribute('aria-pressed',String(item.dataset.glChoice===id)));
+    qa('[data-gl-study]').forEach(study=>{study.hidden=study.dataset.glStudy!==id;});
+  }
+  controls.forEach(button=>button.addEventListener('click',()=>{
+    pickStudy(button.dataset.glChoice);
+    writeSession('legacy-study',preferences);
   }));
+  pickStudy(preferences.study??'cohort');
 
   function updateCohort() {
     const days = q('#gl-cohort-window').value;
@@ -341,11 +349,26 @@ export function bindGrowthLab(root = document) {
       ['单客净贡献', `${amount((contribution - unit.acquisition - unit.service) / unit.members)} 元 / 人`],
     ]) : '请输入有效的获客与服务参数。';
   }
-  forms.forEach((form) => {
-    form.addEventListener('input', updateStudies);
-    form.addEventListener('submit', (event) => event.preventDefault());
+  preferences.values??={};
+  for(const form of forms){
+    for(const field of form.elements){
+      const value=preferences.values[form.id]?.[field.name];
+      if(value!==undefined)field.value=value;
+    }
+    form.addEventListener('input',()=>{
+      preferences.values[form.id]=Object.fromEntries([...form.elements].map(field=>[field.name,field.value]));
+      writeSession('legacy-study',preferences);
+      updateStudies();
+    });
+    form.addEventListener('submit',event=>event.preventDefault());
+  }
+  const windowChoice=q('#gl-cohort-window');
+  if(preferences.window)windowChoice.value=preferences.window;
+  windowChoice.addEventListener('change',()=>{
+    preferences.window=windowChoice.value;
+    writeSession('legacy-study',preferences);
+    updateCohort();
   });
-  q('#gl-cohort-window').addEventListener('change', updateCohort);
   updateEventMeaning();
   updateCohort();
   updateStudies();

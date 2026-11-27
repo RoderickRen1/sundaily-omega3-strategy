@@ -329,8 +329,8 @@ function firstRepeatModule() {
   `);
 }
 
-export function conversionModules() {
-  return decisionModule() + conversionModule() + firstRepeatModule();
+export function conversionModules(id) {
+  return ({decision:decisionModule,conversion:conversionModule,'first-repeat':firstRepeatModule})[id]?.() ?? '';
 }
 
 function bindSwitcher(root, id, render) {

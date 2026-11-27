@@ -1,26 +1,27 @@
-# 圣迪乐 Omega-3 消费者智能经营系统 V2.0
+# 圣迪乐消费者经营战略平台
 
-[新版首页](https://roderickren1.github.io/sundaily-omega3-strategy/) · [V1.0 完整战略](https://roderickren1.github.io/sundaily-omega3-strategy/#strategy-v1) · [V2.0 经营深化](https://roderickren1.github.io/sundaily-omega3-strategy/#growth-strategy) · [产品体验实验室](https://roderickren1.github.io/sundaily-omega3-strategy/#experience-lab) · [商业验证实验室](https://roderickren1.github.io/sundaily-omega3-strategy/#growth-lab)
+[品牌入口](https://roderickren1.github.io/sundaily-omega3-strategy/) · [V1.0 战略体系](https://roderickren1.github.io/sundaily-omega3-strategy/v1/) · [V2.0 经营深化](https://roderickren1.github.io/sundaily-omega3-strategy/v2/) · [产品体验实验室](https://roderickren1.github.io/sundaily-omega3-strategy/v2/product-lab/) · [商业验证实验室](https://roderickren1.github.io/sundaily-omega3-strategy/v2/growth-lab/) · [发布影片及引导](https://roderickren1.github.io/sundaily-omega3-strategy/v2/launch/)
 
-V2.0 在原有的会员战略与组织设计之上，加入消费者转化、动态需求补货、会员产品和经营验证。原有章节锚点继续可用，原商业价值模拟器位于商业验证实验室，保留 `#simulator` 地址。
+V1.0 为战略基础，V2.0 深化转化、周期购、产品体验和商业验证。两个版本都有独立的总览、目录和章节。每个商业工作台拥有独立地址。
 
-## 本地预览
+## 构建与预览
 
-在项目目录运行 `python3 -m http.server 8080`，访问 `http://localhost:8080/`。静态 HTML、CSS 和 JavaScript，无需安装依赖或构建。GitHub Pages 从 `main` 分支根目录发布。
+`node build-pages.mjs` 从 `routes.js` 生成各路由的静态页面。更新路由或页面外壳后，请重新生成并提交对应的 `index.html` 文件。GitHub Pages 发布 `main` 分支根目录。
+
+预览可从项目目录运行 `python3 -m http.server 8080`，访问 `http://localhost:8080/`。测试影片进度跳转时，请使用支持 HTTP 字节范围请求的静态服务。
+
+运行 `node --test tests/*.test.mjs` 验证路由、模型和沙盒状态。
 
 ## 维护入口
 
-- `content.js` 维护 V1.0 战略与行业案例证据说明。
-- `strategy-v2.js`、`growth-conversion.js`、`growth-rhythm.js` 维护 V2.0 双引擎与六个深化模块。
-- `consumer-engine.js` 维护产品前台与联动后台的会话内状态。两者使用 `sandbox-state.js` 的统一经营规则。
-- `experience-lab.js` 承接产品体验，`growth-lab.js` 保留联动演示，`growth-workbenches.js` 与 `growth-models.js` 维护六个商业验证工作台及公式。
-- 发布影片、封面和中文字幕位于 `assets/keynote/`，播放与章节定位由 `strategy-v2.js` 管理。
-- `guided-experience.js` 实现全程新手引导与六个独立工作台引导，以实际页面事件和经营状态确认操作。
+- `routes.js` 维护版本、章节、工具与旧地址映射。`platform.js` 实现工作空间目录、当前位置、上一页与下一页。
+- `content.js` 和 `app.js` 维护 V1.0 战略内容与交互。原商业价值模拟器位于 `/v1/business/simulator/`。
+- `strategy-v2.js`、`growth-conversion.js` 和 `growth-rhythm.js` 维护 V2.0 双引擎与六个研究模块。
+- `experience-lab.js` 承接产品沙盒，`growth-lab.js` 承接联动后台与既有模型，`growth-workbenches.js` 和 `growth-models.js` 维护六个独立商业工作台及公式。
+- `guided-experience.js` 维护跨页新手引导与独立工具引导。影片、封面和字幕位于 `assets/keynote/`，播放器位于 `/v2/launch/`。
 
-## 产品体验沙盒
+旧分享片段（如 `/#strategy-v1`、`/#experience-lab`、`/#lab-increment`）会定位到对应地址。原页面级兼容入口仍可访问。
 
-在产品体验实验室切换六个场景。切换桌面模式或移动端视角会继续使用当前共享状态，切换场景或重置会重新初始化。订单、履约、权益、家庭、授权、时间和事件仅在当前页面模拟。
+## 模拟状态
 
-`sandbox-state.js` 集中维护情景数据、交易和计划状态、权益与下一步决策。商业验证工作台独立管理人口参数、实验样本及决策场景。经营规则工作台直接复用产品体验的规则函数。
-
-运行 `node --test tests/*.test.mjs` 验证经营模型及沙盒状态。
+产品与后台共用 `consumer-engine.js` 的模拟消费者和 `sandbox-state.js` 的规则。每个商业工作台独立保存当前输入。状态通过 `sessionStorage` 存在当前浏览器标签页，支持切换页面、刷新、前进及后退。切换产品场景、主动重置或显式开启引导会按相应操作重新初始化样例。

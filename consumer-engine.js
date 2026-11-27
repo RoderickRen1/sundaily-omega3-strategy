@@ -1,3 +1,4 @@
+import { readSession, writeSession } from './session.js?v=1';
 import { initializeSandbox, forecastSandbox, evaluateSandbox, runSandboxAction, benefitEntries } from './sandbox-state.js?v=8';
 
 export const HOUSEHOLDS = [
@@ -72,8 +73,12 @@ function initialState() {
   };
 }
 
-let store = initialState();
-let sandboxRun = 0;
+const saved = readSession('consumer-sandbox');
+let store = saved?.sandbox && saved.homes?.[saved.activeHome] ? saved : initialState();
+let sandboxRun = store.sandbox?.run ?? 0;
+export function ensureSandbox(){
+  if(!store.sandbox)dispatchConsumer('sandbox-start',{id:'scan'});
+}
 
 function bounded(value, low, high) {
   if (value == null || value === '') return null;
@@ -104,6 +109,7 @@ export function subscribeConsumer(listener) {
 }
 
 function publish() {
+  if(store.sandbox)writeSession('consumer-sandbox',store);
   const snapshot = getConsumerState();
   listeners.forEach((listener) => listener(snapshot));
   return snapshot;

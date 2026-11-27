@@ -1,4 +1,4 @@
-import { subscribeConsumer, dispatchConsumer, estimateWindow, decideNextAction, PLAN_LABELS, LIFECYCLE_LABELS, RELATIONSHIP_LABELS } from './consumer-engine.js?v=8';
+import { subscribeConsumer, dispatchConsumer, estimateWindow, decideNextAction, PLAN_LABELS, LIFECYCLE_LABELS, RELATIONSHIP_LABELS } from './consumer-engine.js?v=10';
 
 const periods = [
   ['家庭消耗周期', '鸡蛋从进入家庭库存到被食用的速度。记录这个家庭吃得多快。', [0, 7, 10], '模拟消耗窗口 7–10 天'],
@@ -77,8 +77,9 @@ function periodChart() {
   </div>`;
 }
 
-export function rhythmModules() {
-  return `
+export function rhythmModules(id) {
+  const pages = {
+    'rhythm-research':`
     <article id="rhythm-research" class="v2-module" aria-labelledby="rhythm-research-title">
       <header><p class="eyebrow">04 · Household Consumption Intelligence</p><h3 id="rhythm-research-title">从品牌营销日历，到消费者生活节奏。</h3>
       <p class="intro">分别理解家庭消耗、品类采购及品牌复购。动态补货的目标是找准下一次真实购买需求。</p>${evidence('已确认战略共识')}</header>
@@ -111,9 +112,8 @@ export function rhythmModules() {
         </div>
       </div>
       <details class="v2-evidence-details"><summary>研究方法与验证重点</summary><p>结合情境访谈、消费者日记、交易分析、旅程研究、概念测试及可用性测试，找出真实补货决策点。同时观察库存、下一次采购计划、渠道习惯与服务偏好。</p></details>
-    </article>
-
-    <article id="rhythm-product" class="v2-module" aria-labelledby="rhythm-product-title">
+    </article>`,
+    'rhythm-product':`<article id="rhythm-product" class="v2-module" aria-labelledby="rhythm-product-title">
       <header><p class="eyebrow">05 · Product Design &amp; User Experience</p><h3 id="rhythm-product-title">懂您的生活节奏，也懂您在乎的人。</h3>
       <p class="intro">一个 SUNDaily Membership 身份，承接四类服务与多个家庭计划。动态需求是经营依据，固定周期购和蛋卡用于承接适合的商品需求。</p>${evidence('产品概念演示')}</header>
       <div class="v2-block v2-split">
@@ -126,9 +126,8 @@ export function rhythmModules() {
         <div><h4>产品前台</h4><p>统一身份、动态会员首页、四大服务、家庭计划、商品及权益，以及授权、隐私与提醒管理。</p><a class="button button-primary" href="#experience-lab">体验会员产品</a></div>
         <div><h4>Consumer Growth Console</h4><p>Consumer Passport 与 Next Best Action 连接转化及动态补货引擎。消费者行为进入后台，更新档案、消费状态、需求窗口与经营决策。</p><a class="v2-text-link" href="#consumer-intelligence">查看数据与决策规则</a></div>
       </div>
-    </article>
-
-    <article id="consumer-intelligence" class="v2-module" aria-labelledby="consumer-intelligence-title">
+    </article>`,
+    'consumer-intelligence':`<article id="consumer-intelligence" class="v2-module" aria-labelledby="consumer-intelligence-title">
       <header><p class="eyebrow">06 · Consumer Intelligence &amp; Growth Validation</p><h3 id="consumer-intelligence-title">每一次消费者行为，都是下一次经营决策的依据。</h3>
       <p class="intro">从事件读懂需求，再以许可、服务状态和频控决定下一步。保持静默也是经营结果。</p>${evidence('已确认战略共识 · 产品概念演示')}</header>
       <div class="v2-block v2-split">
@@ -153,10 +152,13 @@ export function rhythmModules() {
       </div>
       <details class="v2-evidence-details"><summary>查看 13 类经营事件</summary>${itemList(events)}</details>
     </article>
-  `;
+  `,
+  };
+  return pages[id] ?? '';
 }
 
 function bindOptions(article, render) {
+  if(!article)return;
   const buttons = [...article.querySelectorAll('[data-option]')];
   function activate(index) {
     buttons.forEach((button, i) => button.setAttribute('aria-pressed', String(i === index)));
@@ -183,7 +185,10 @@ export function bindRhythmModules(root = document) {
     const [name, label, description] = loop[index];
     root.querySelector('#v2-intelligence-step').innerHTML = `<p class="eyebrow">${index + 1} / ${loop.length} · ${name}</p><h4>${label}</h4><p>${description}</p>`;
   });
-  root.querySelector('#rhythm-feedback').addEventListener('click', event => {
+  const feedbackPanel=root.querySelector('#rhythm-feedback');
+  const dimensions=root.querySelector('#v2-consumer-dimensions');
+  if(!feedbackPanel&&!dimensions)return;
+  feedbackPanel?.addEventListener('click', event => {
     const button = event.target.closest('[data-rhythm-feedback]');
     if (button) dispatchConsumer('feedback', { value: button.dataset.rhythmFeedback });
   });
@@ -200,12 +205,15 @@ export function bindRhythmModules(root = document) {
       service: state.request ? '消费者主动请求' : state.serviceOpen ? '售后处理中' : state.pendingOrder ? '待履约' : '无待处理服务',
       permission: state.permission && home.authorization ? '已授权' : '未授权',
     };
-    Object.entries(data).forEach(([key, value]) => { root.querySelector(`[data-dimension="${key}"]`).textContent = value ?? '待识别'; });
+    if(dimensions)Object.entries(data).forEach(([key, value]) => { root.querySelector(`[data-dimension="${key}"]`).textContent = value ?? '待识别'; });
+    if(feedbackPanel){
     root.querySelector('#rhythm-feedback-home').textContent = home.name;
     root.querySelector('#rhythm-feedback-window').textContent = ` · 模拟第 ${state.day} 天 · ${window.start == null ? '补货窗口未知' : `预计第 ${window.start}–${window.end} 天需要补给`}`;
     root.querySelector('#rhythm-feedback-result').textContent = feedback
       ? `最近反馈「${feedback[1]}」。${decision.title}。 ${decision.reason}`
       : `当前推演：${decision.title}。 ${decision.reason}`;
-    root.querySelector('#v2-current-decision').textContent = `${decision.title}。 ${decision.reason} 停止条件：${decision.stop}`;
+    }
+    const current=root.querySelector('#v2-current-decision');
+    if(current)current.textContent = `${decision.title}。 ${decision.reason} 停止条件：${decision.stop}`;
   });
 }
